@@ -52,12 +52,12 @@ export function flagUrl(code: string | null): string | null {
 }
 
 export function formatMatchDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleString("pt-BR", {
+  return new Date(dateStr).toLocaleString(undefined, {
     day: "2-digit",
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "America/Sao_Paulo",
+    timeZoneName: "short",
   });
 }
 
