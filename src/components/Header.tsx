@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import { LogIn, LogOut, Trophy, Calendar, BarChart3, Shield } from "lucide-react";
+import { LogIn, LogOut, Calendar, BarChart3, Shield, ListOrdered } from "lucide-react";
 
 export function Header() {
   const [user, setUser] = useState<User | null>(null);
@@ -60,6 +60,9 @@ export function Header() {
         <nav className="hidden sm:flex items-center gap-1">
           <Link href="/jogos" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors text-sm">
             <Calendar size={15} /> Jogos
+          </Link>
+          <Link href="/resultados" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors text-sm">
+            <ListOrdered size={15} /> Resultados
           </Link>
           <Link href="/placar" className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors text-sm">
             <BarChart3 size={15} /> Ranking
@@ -122,6 +125,9 @@ export function Header() {
         <div className="sm:hidden bg-slate-800 border-t border-slate-700 px-4 py-2 flex flex-col gap-1">
           <Link href="/jogos" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700">
             <Calendar size={15} /> Jogos
+          </Link>
+          <Link href="/resultados" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700">
+            <ListOrdered size={15} /> Resultados
           </Link>
           <Link href="/placar" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700">
             <BarChart3 size={15} /> Ranking
