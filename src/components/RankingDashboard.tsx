@@ -549,6 +549,35 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
         </div>
       )}
 
+      {/* Achievement badges legend */}
+      {(() => {
+        const allBadges = [
+          { emoji: "🏆", label: t.badgeLeader,    desc: t.badgeLeaderDesc,    color: "bg-yellow-500/20 text-yellow-300" },
+          { emoji: "🎯", label: t.badgeSniper,    desc: t.badgeSniperDesc,    color: "bg-green-500/20 text-green-300" },
+          { emoji: "✨", label: t.badgePerfect,   desc: t.badgePerfectDesc,   color: "bg-purple-500/20 text-purple-300" },
+          { emoji: "🔥", label: t.badgeOnFire,    desc: t.badgeOnFireDesc,    color: "bg-orange-500/20 text-orange-300" },
+          { emoji: "📊", label: t.badgeDedicated, desc: t.badgeDedicatedDesc, color: "bg-blue-500/20 text-blue-300" },
+          { emoji: "🏮", label: t.badgeLantern,   desc: t.badgeLanternDesc,   color: "bg-red-500/20 text-red-400" },
+          { emoji: "💤", label: t.badgeSleeping,  desc: t.badgeSleepingDesc,  color: "bg-slate-700 text-slate-400" },
+        ];
+        return (
+          <div className="bg-slate-800 rounded-xl p-5 space-y-3">
+            <p className="text-slate-400 text-xs uppercase tracking-wide font-medium">{t.badgesPanelTitle}</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {allBadges.map((b) => (
+                <div key={b.label} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${b.color}`}>
+                  <span className="text-xl shrink-0">{b.emoji}</span>
+                  <div>
+                    <p className="font-semibold text-sm leading-tight">{b.label}</p>
+                    <p className="text-xs opacity-80">{b.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Tiered badges */}
       <TieredBadgesPanel />
 

@@ -109,6 +109,7 @@ export const translations = {
     // Compact view
     viewCompact: "Compacto",
     // Badges panel
+    badgesPanelTitle: "Badges de curtição",
     badgesPanelDesc: "Três conquistas que aparecem ao lado do nome na classificação. A cor sobe de nível conforme a quantidade acumulada.",
     // Table columns
     colPlayed: "J", colWon: "V", colDrawn: "E", colLost: "D",
@@ -379,6 +380,7 @@ export const translations = {
     teamWinner: "Winner", teamLoser: "Loser",
     teamOrdinal: (n: string) => `${n === "1" ? "1st" : n === "2" ? "2nd" : n === "3" ? "3rd" : `${n}th`}`,
     viewCompact: "Compact",
+    badgesPanelTitle: "Achievement badges",
     badgesPanelDesc: "Three achievements shown next to your name in the standings. The medal colour rises in tier as you accumulate more.",
     colPlayed: "P", colWon: "W", colDrawn: "D", colLost: "L",
     colGF: "GF", colGA: "GA", colGD: "GD", colPts: "Pts",
@@ -634,6 +636,7 @@ export const translations = {
     teamWinner: "Winnaar", teamLoser: "Verliezer",
     teamOrdinal: (n: string) => `${n}e`,
     viewCompact: "Compact",
+    badgesPanelTitle: "Prestatie badges",
     badgesPanelDesc: "Drie prestaties die naast je naam in de ranglijst verschijnen. De kleur stijgt van niveau naarmate je er meer verzamelt.",
     colPlayed: "G", colWon: "W", colDrawn: "G", colLost: "V",
     colGF: "DV", colGA: "DT", colGD: "DS", colPts: "Pnt",
