@@ -110,6 +110,13 @@ function useBadges(
   const geloSet = new Set(geloUserIds);
   const relampago = computeRelampago(leaders, roundLeaders);
 
+  const leaderRoundPts = roundLeaders.find((r) => r.id === leaders[0]?.id)?.points ?? 0;
+  const cacadoresSet = new Set(
+    leaderRoundPts > 0
+      ? roundLeaders.filter((r) => r.id !== leaders[0]?.id && r.points > leaderRoundPts).map((r) => r.id)
+      : []
+  );
+
   return (player: Leader, rank: number): Badge[] => {
     const badges: Badge[] = [];
     const preds = Number(player.total_predictions);
@@ -126,6 +133,7 @@ function useBadges(
     if (preds === maxPreds && preds > 0)                     badges.push({ emoji: "📊", label: t.badgeDedicated, desc: t.badgeDedicatedDesc, color: "bg-blue-500/20 text-blue-300" });
     if (geloSet.has(player.id))                              badges.push({ emoji: "🧊", label: t.badgeGelo,      desc: t.badgeGeloDesc,      color: "bg-cyan-500/20 text-cyan-300" });
     if (player.id === relampago)                             badges.push({ emoji: "⚡", label: t.badgeRelampago, desc: t.badgeRelampaoDesc,  color: "bg-yellow-500/20 text-yellow-200" });
+    if (cacadoresSet.has(player.id))                        badges.push({ emoji: "🦁", label: t.badgeCacador,   desc: t.badgeCacadorDesc,   color: "bg-amber-500/20 text-amber-300" });
     return badges;
   };
 }
@@ -627,6 +635,7 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
           { emoji: "🏮", label: t.badgeLantern,   desc: t.badgeLanternDesc,   color: "bg-red-500/20 text-red-400" },
           { emoji: "🧊", label: t.badgeGelo,      desc: t.badgeGeloDesc,      color: "bg-cyan-500/20 text-cyan-300" },
           { emoji: "⚡", label: t.badgeRelampago, desc: t.badgeRelampaoDesc,  color: "bg-yellow-500/20 text-yellow-200" },
+          { emoji: "🦁", label: t.badgeCacador,   desc: t.badgeCacadorDesc,   color: "bg-amber-500/20 text-amber-300" },
         ];
         return (
           <div className="bg-slate-800 rounded-xl p-5 space-y-3">
