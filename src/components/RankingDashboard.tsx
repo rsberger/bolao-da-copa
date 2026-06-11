@@ -630,7 +630,6 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
       {(() => {
         const allBadges = [
           { emoji: "🏆", label: t.badgeLeader,    desc: t.badgeLeaderDesc,    color: "bg-yellow-500/20 text-yellow-300" },
-          { emoji: "🔥", label: t.badgeOnFire,    desc: t.badgeOnFireDesc,    color: "bg-orange-500/20 text-orange-300" },
           { emoji: "📊", label: t.badgeDedicated, desc: t.badgeDedicatedDesc, color: "bg-blue-500/20 text-blue-300" },
           { emoji: "🏮", label: t.badgeLantern,   desc: t.badgeLanternDesc,   color: "bg-red-500/20 text-red-400" },
           { emoji: "🧊", label: t.badgeGelo,      desc: t.badgeGeloDesc,      color: "bg-cyan-500/20 text-cyan-300" },
