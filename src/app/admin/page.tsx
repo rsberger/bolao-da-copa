@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { AdminSyncButton } from "@/components/AdminSyncButton";
+import { AdminResultForm } from "@/components/AdminResultForm";
 import { getLocale } from "@/lib/i18n/server";
 import { translations } from "@/lib/i18n/translations";
 import { Calendar, Users } from "lucide-react";
@@ -39,6 +40,11 @@ export default async function AdminPage() {
     .limit(1)
     .single();
 
+  const { data: allMatches } = await supabase
+    .from("matches")
+    .select("*")
+    .order("match_date", { ascending: true });
+
   const { data: syncLogs } = await createAdminClient()
     .from("sync_logs")
     .select("started_at, finished_at, updated_matches, total_finished_api, trigger, error")
@@ -71,6 +77,14 @@ export default async function AdminPage() {
           <div className="text-slate-400 text-sm mt-1">{t.adminPredictions}</div>
         </div>
       </div>
+
+      <section className="bg-slate-800 rounded-xl p-6 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Inserir resultado manualmente</h2>
+          <p className="text-slate-400 text-sm mt-1">Use quando o sync automático não retornar dados da API.</p>
+        </div>
+        <AdminResultForm matches={allMatches ?? []} />
+      </section>
 
       <section className="bg-slate-800 rounded-xl p-6 space-y-4">
         <div>

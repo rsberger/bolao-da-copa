@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { Match } from "@/lib/matches";
 import { flagUrl } from "@/lib/matches";
@@ -25,21 +24,18 @@ export function AdminResultForm({ matches }: Props) {
     setError("");
     setSuccess("");
 
-    const supabase = createClient();
+    const res = await fetch("/api/admin/result", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId, homeScore: parseInt(home), awayScore: parseInt(away) }),
+    });
 
-    const { error: err } = await supabase
-      .from("matches")
-      .update({ home_score: parseInt(home), away_score: parseInt(away), is_finished: true })
-      .eq("id", matchId);
-
-    if (err) {
-      setError(err.message);
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error ?? "Erro desconhecido");
       setSaving(false);
       return;
     }
-
-    // Calcula pontos via RPC
-    await supabase.rpc("calculate_match_points", { p_match_id: matchId });
 
     setSaving(false);
     setSuccess("Resultado salvo e pontos calculados!");
