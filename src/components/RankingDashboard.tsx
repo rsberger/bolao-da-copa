@@ -31,6 +31,7 @@ type Props = {
   myChampionPick: { team: string; team_flag: string | null } | null;
   missingMatchCount: number;
   missingChampion: boolean;
+  finishedPredsById: Record<string, number>;
 };
 
 function Avatar({ player, size = 40 }: { player: Leader; size?: number }) {
@@ -54,26 +55,27 @@ function firstName(p: Leader) { return (p.name ?? p.email ?? "?").split(" ")[0];
 
 type Badge = { emoji: string; label: string; desc: string; color: string };
 
-function useBadges(leaders: Leader[]) {
+function useBadges(leaders: Leader[], finishedPredsById: Record<string, number>) {
   const t = useT();
   const maxPreds = Math.max(...leaders.map((l) => Number(l.total_predictions)));
+  const lastPlayerId = leaders[leaders.length - 1]?.id;
 
   return (player: Leader, rank: number): Badge[] => {
     const badges: Badge[] = [];
     const preds = Number(player.total_predictions);
     const hits = Number(player.total_hits);
     const exacts = Number(player.exact_scores);
-    const accuracy = preds > 0 ? hits / preds : 0;
-    const isLast = rank === leaders.filter((l) => Number(l.total_predictions) > 0).length;
+    const finishedPreds = finishedPredsById[player.id] ?? 0;
+    const accuracyOnFinished = finishedPreds > 0 ? hits / finishedPreds : 0;
+    const isLast = player.id === lastPlayerId;
 
-    if (preds === 0)                    badges.push({ emoji: "💤", label: t.badgeSleeping,   desc: t.badgeSleepingDesc,   color: "bg-slate-700 text-slate-400" });
-    if (rank === 1 && preds > 0)        badges.push({ emoji: "🏆", label: t.badgeLeader,     desc: t.badgeLeaderDesc,     color: "bg-yellow-500/20 text-yellow-300" });
-    if (isLast && preds > 0)            badges.push({ emoji: "🏮", label: t.badgeLantern,    desc: t.badgeLanternDesc,    color: "bg-red-500/20 text-red-400" });
-    if (exacts >= 3)                    badges.push({ emoji: "🎯", label: t.badgeSniper,      desc: t.badgeSniperDesc,     color: "bg-green-500/20 text-green-300" });
-    if (accuracy === 1 && preds >= 3)   badges.push({ emoji: "✨", label: t.badgePerfect,    desc: t.badgePerfectDesc,    color: "bg-purple-500/20 text-purple-300" });
-    else if (accuracy >= 0.7 && preds >= 3) badges.push({ emoji: "🔥", label: t.badgeOnFire, desc: t.badgeOnFireDesc,     color: "bg-orange-500/20 text-orange-300" });
-    if (preds === maxPreds && preds > 0 && rank !== 1)
-                                        badges.push({ emoji: "📊", label: t.badgeDedicated,  desc: t.badgeDedicatedDesc,  color: "bg-blue-500/20 text-blue-300" });
+    if (preds === 0)                               badges.push({ emoji: "💤", label: t.badgeSleeping,   desc: t.badgeSleepingDesc,   color: "bg-slate-700 text-slate-400" });
+    if (rank === 1 && preds > 0)                   badges.push({ emoji: "🏆", label: t.badgeLeader,     desc: t.badgeLeaderDesc,     color: "bg-yellow-500/20 text-yellow-300" });
+    if (isLast)                                    badges.push({ emoji: "🏮", label: t.badgeLantern,    desc: t.badgeLanternDesc,    color: "bg-red-500/20 text-red-400" });
+    if (exacts >= 1)                               badges.push({ emoji: "🎯", label: t.badgeSniper,     desc: t.badgeSniperDesc,     color: "bg-green-500/20 text-green-300" });
+    if (accuracyOnFinished === 1 && finishedPreds >= 1)  badges.push({ emoji: "✨", label: t.badgePerfect, desc: t.badgePerfectDesc, color: "bg-purple-500/20 text-purple-300" });
+    else if (accuracyOnFinished >= 0.7 && finishedPreds >= 3) badges.push({ emoji: "🔥", label: t.badgeOnFire, desc: t.badgeOnFireDesc, color: "bg-orange-500/20 text-orange-300" });
+    if (preds === maxPreds && preds > 0)           badges.push({ emoji: "📊", label: t.badgeDedicated,  desc: t.badgeDedicatedDesc,  color: "bg-blue-500/20 text-blue-300" });
     return badges;
   };
 }
@@ -183,10 +185,10 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
   );
 }
 
-export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, championPicks, myChampionPick, missingMatchCount, missingChampion }: Props) {
+export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, championPicks, myChampionPick, missingMatchCount, missingChampion, finishedPredsById }: Props) {
   const t = useT();
   const locale = useLocale();
-  const getBadges = useBadges(leaders);
+  const getBadges = useBadges(leaders, finishedPredsById);
 
   const hasData = leaders.length > 0 && leaders.some((l) => l.total_predictions > 0);
 

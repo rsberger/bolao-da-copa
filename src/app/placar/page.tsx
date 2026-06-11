@@ -42,6 +42,17 @@ export default async function PlacarPage() {
       .sort((a, b) => b.points - a.points);
   }
 
+  // Finished predictions count per user (for accurate badge calculation)
+  const { data: finishedPredRows } = await supabase
+    .from("predictions")
+    .select("user_id")
+    .not("points", "is", null);
+
+  const finishedPredsById: Record<string, number> = {};
+  for (const row of finishedPredRows ?? []) {
+    finishedPredsById[row.user_id] = (finishedPredsById[row.user_id] ?? 0) + 1;
+  }
+
   // Missing predictions alert
   let missingMatchCount = 0;
   let missingChampion = false;
@@ -93,6 +104,7 @@ export default async function PlacarPage() {
       myChampionPick={myChampionPick}
       missingMatchCount={missingMatchCount}
       missingChampion={missingChampion}
+      finishedPredsById={finishedPredsById}
     />
   );
 }
