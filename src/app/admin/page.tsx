@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { redirect } from "next/navigation";
 import { AdminSyncButton } from "@/components/AdminSyncButton";
 import { AdminResultForm } from "@/components/AdminResultForm";
+import { AdminRoundResults } from "@/components/AdminRoundResults";
 import { getLocale } from "@/lib/i18n/server";
 import { translations } from "@/lib/i18n/translations";
 import { Calendar, Users } from "lucide-react";
@@ -77,6 +78,11 @@ export default async function AdminPage() {
           <div className="text-slate-400 text-sm mt-1">{t.adminPredictions}</div>
         </div>
       </div>
+
+      <section className="bg-slate-800 rounded-xl p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-white">Resultados vs Palpites</h2>
+        <AdminRoundResults />
+      </section>
 
       <section className="bg-slate-800 rounded-xl p-6 space-y-4">
         <div>
