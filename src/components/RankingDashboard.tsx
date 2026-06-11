@@ -53,7 +53,21 @@ function Avatar({ player, size = 40 }: { player: Leader; size?: number }) {
 function displayName(p: Leader) { return p.name ?? p.email ?? "?"; }
 function firstName(p: Leader) { return (p.name ?? p.email ?? "?").split(" ")[0]; }
 
-type Badge = { emoji: string; label: string; desc: string; color: string };
+type Badge = { emoji: string; label: string; desc: string; color: string; tier?: typeof TIERS[number] };
+
+function sniperTier(exacts: number): typeof TIERS[number] {
+  if (exacts >= 20) return TIERS[3]; // Diamante
+  if (exacts >= 10) return TIERS[2]; // Ouro
+  if (exacts >= 5)  return TIERS[1]; // Prata
+  return TIERS[0];                   // Bronze
+}
+
+function onFireTier(finishedPreds: number): typeof TIERS[number] {
+  if (finishedPreds >= 10) return TIERS[3];
+  if (finishedPreds >= 6)  return TIERS[2];
+  if (finishedPreds >= 3)  return TIERS[1];
+  return TIERS[0];
+}
 
 function useBadges(leaders: Leader[], finishedPredsById: Record<string, number>) {
   const t = useT();
@@ -69,13 +83,12 @@ function useBadges(leaders: Leader[], finishedPredsById: Record<string, number>)
     const accuracyOnFinished = finishedPreds > 0 ? hits / finishedPreds : 0;
     const isLast = player.id === lastPlayerId;
 
-    if (preds === 0)                               badges.push({ emoji: "💤", label: t.badgeSleeping,   desc: t.badgeSleepingDesc,   color: "bg-slate-700 text-slate-400" });
-    if (rank === 1 && preds > 0)                   badges.push({ emoji: "🏆", label: t.badgeLeader,     desc: t.badgeLeaderDesc,     color: "bg-yellow-500/20 text-yellow-300" });
-    if (isLast)                                    badges.push({ emoji: "🏮", label: t.badgeLantern,    desc: t.badgeLanternDesc,    color: "bg-red-500/20 text-red-400" });
-    if (exacts >= 1)                               badges.push({ emoji: "🎯", label: t.badgeSniper,     desc: t.badgeSniperDesc,     color: "bg-green-500/20 text-green-300" });
-    if (accuracyOnFinished === 1 && finishedPreds >= 1)  badges.push({ emoji: "✨", label: t.badgePerfect, desc: t.badgePerfectDesc, color: "bg-purple-500/20 text-purple-300" });
-    else if (accuracyOnFinished >= 0.7 && finishedPreds >= 3) badges.push({ emoji: "🔥", label: t.badgeOnFire, desc: t.badgeOnFireDesc, color: "bg-orange-500/20 text-orange-300" });
-    if (preds === maxPreds && preds > 0)           badges.push({ emoji: "📊", label: t.badgeDedicated,  desc: t.badgeDedicatedDesc,  color: "bg-blue-500/20 text-blue-300" });
+    if (rank === 1 && preds > 0)                        badges.push({ emoji: "🏆", label: t.badgeLeader,    desc: t.badgeLeaderDesc,    color: "bg-yellow-500/20 text-yellow-300" });
+    if (isLast)                                         badges.push({ emoji: "🏮", label: t.badgeLantern,   desc: t.badgeLanternDesc,   color: "bg-red-500/20 text-red-400" });
+    if (exacts >= 1)                                    badges.push({ emoji: "🎯", label: t.badgeSniper,    desc: t.badgeSniperDesc,    color: "bg-green-500/20 text-green-300",   tier: sniperTier(exacts) });
+    if (accuracyOnFinished === 1 && finishedPreds >= 1) badges.push({ emoji: "✨", label: t.badgePerfect,   desc: t.badgePerfectDesc,   color: "bg-purple-500/20 text-purple-300" });
+    else if (accuracyOnFinished >= 0.7 && finishedPreds >= 3) badges.push({ emoji: "🔥", label: t.badgeOnFire, desc: t.badgeOnFireDesc, color: "bg-orange-500/20 text-orange-300", tier: onFireTier(finishedPreds) });
+    if (preds === maxPreds && preds > 0)                badges.push({ emoji: "📊", label: t.badgeDedicated, desc: t.badgeDedicatedDesc, color: "bg-blue-500/20 text-blue-300" });
     return badges;
   };
 }
@@ -126,6 +139,23 @@ function BadgeIcon({ icon, tier }: { icon: string; tier: typeof TIERS[number] | 
     <div className={`w-10 h-10 rounded-full ${ring} flex items-center justify-center text-lg`}>
       {icon}
     </div>
+  );
+}
+
+function InlineBadge({ b }: { b: Badge }) {
+  if (b.tier) {
+    return (
+      <span title={`${b.label}: ${b.desc}`}
+        className={`w-6 h-6 rounded-full border-2 ${b.tier.ring} flex items-center justify-center text-sm leading-none`}>
+        {b.emoji}
+      </span>
+    );
+  }
+  return (
+    <span title={`${b.label}: ${b.desc}`}
+      className={`text-xs px-1.5 py-0 rounded-full leading-5 inline-flex items-center gap-0.5 ${b.color}`}>
+      {b.emoji}
+    </span>
   );
 }
 
@@ -351,6 +381,7 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
                     {b.emoji} {b.label}
                   </span>
                 ))}
+
               </div>
             </div>
             <div className="text-right shrink-0">
@@ -443,7 +474,7 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
                   {badges.length > 0 && (
                     <div className="flex gap-1 flex-wrap justify-center">
                       {badges.slice(0, 2).map((b) => (
-                        <span key={b.label} title={`${b.label}: ${b.desc}`} className="text-base leading-none">{b.emoji}</span>
+                        <InlineBadge key={b.label} b={b} />
                       ))}
                     </div>
                   )}
@@ -491,9 +522,8 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
                       {displayName(player)}{isMe ? ` ${t.youIndicator}` : ""}
                     </span>
                     {badges.map((b) => (
-                      <span key={b.label} title={`${b.label}: ${b.desc}`}
-                        className={`text-xs px-1.5 py-0 rounded-full leading-5 hidden sm:inline-flex items-center gap-0.5 ${b.color}`}>
-                        {b.emoji}
+                      <span key={b.label} className="hidden sm:inline-flex">
+                        <InlineBadge b={b} />
                       </span>
                     ))}
                   </div>
@@ -560,7 +590,6 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
           { emoji: "🔥", label: t.badgeOnFire,    desc: t.badgeOnFireDesc,    color: "bg-orange-500/20 text-orange-300" },
           { emoji: "📊", label: t.badgeDedicated, desc: t.badgeDedicatedDesc, color: "bg-blue-500/20 text-blue-300" },
           { emoji: "🏮", label: t.badgeLantern,   desc: t.badgeLanternDesc,   color: "bg-red-500/20 text-red-400" },
-          { emoji: "💤", label: t.badgeSleeping,  desc: t.badgeSleepingDesc,  color: "bg-slate-700 text-slate-400" },
         ];
         return (
           <div className="bg-slate-800 rounded-xl p-5 space-y-3">

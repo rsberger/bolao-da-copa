@@ -191,11 +191,9 @@ export const translations = {
 
     // Gamification
     badgeSniper: "Sniper",
-    badgeSniperDesc: "3+ placares exatos",
+    badgeSniperDesc: "1+ placar exato",
     badgeOnFire: "Em chamas",
     badgeOnFireDesc: "Mais de 70% de acerto",
-    badgeSleeping: "Dormindo",
-    badgeSleepingDesc: "Nenhum palpite enviado",
     badgeLeader: "Craque do Bolão",
     badgeLeaderDesc: "Líder do ranking",
     badgeLantern: "Lanterninha",
@@ -439,11 +437,9 @@ export const translations = {
     batchStatusError: "Error",
 
     badgeSniper: "Sniper",
-    badgeSniperDesc: "3+ exact scores",
+    badgeSniperDesc: "1+ exact score",
     badgeOnFire: "On fire",
     badgeOnFireDesc: "Over 70% accuracy",
-    badgeSleeping: "Sleeping",
-    badgeSleepingDesc: "No predictions yet",
     badgeLeader: "Pool King",
     badgeLeaderDesc: "Leading the ranking",
     badgeLantern: "Tail-ender",
@@ -695,11 +691,9 @@ export const translations = {
     batchStatusError: "Fout",
 
     badgeSniper: "Sniper",
-    badgeSniperDesc: "3+ exacte scores",
+    badgeSniperDesc: "1+ exacte score",
     badgeOnFire: "In vuur en vlam",
     badgeOnFireDesc: "Meer dan 70% nauwkeurigheid",
-    badgeSleeping: "Slapend",
-    badgeSleepingDesc: "Nog geen voorspellingen",
     badgeLeader: "Poulebaas",
     badgeLeaderDesc: "Leider van de ranglijst",
     badgeLantern: "Hekkensluiter",
