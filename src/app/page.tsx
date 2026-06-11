@@ -1,55 +1,41 @@
 import Link from "next/link";
 import { Trophy, Calendar, BarChart3, LogIn } from "lucide-react";
+import { getLocale } from "@/lib/i18n/server";
+import { translations } from "@/lib/i18n/translations";
 
-export default function Home() {
+export default async function Home() {
+  const locale = await getLocale();
+  const t = translations[locale];
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] text-center gap-8">
       <div>
         <div className="text-6xl mb-4">⚽</div>
-        <h1 className="text-4xl font-bold text-white mb-2">Bolão da Copa</h1>
-        <p className="text-slate-400 text-lg">
-          Faça seus palpites, acumule pontos e dispute com seus amigos!
-        </p>
+        <h1 className="text-4xl font-bold text-white mb-2">{t.appName}</h1>
+        <p className="text-slate-400 text-lg">{t.appTagline}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
-        <div className="bg-slate-800 rounded-xl p-5 flex flex-col items-center gap-2">
-          <Calendar className="text-green-400" size={32} />
-          <h2 className="font-semibold text-white">Jogos</h2>
-          <p className="text-slate-400 text-sm">Veja os jogos e envie seus palpites</p>
-        </div>
-        <div className="bg-slate-800 rounded-xl p-5 flex flex-col items-center gap-2">
-          <Trophy className="text-yellow-400" size={32} />
-          <h2 className="font-semibold text-white">Pontuação</h2>
-          <p className="text-slate-400 text-sm">Placar exato: 10pts · Vencedor: 5pts</p>
-        </div>
-        <div className="bg-slate-800 rounded-xl p-5 flex flex-col items-center gap-2">
-          <BarChart3 className="text-blue-400" size={32} />
-          <h2 className="font-semibold text-white">Ranking</h2>
-          <p className="text-slate-400 text-sm">Acompanhe a classificação em tempo real</p>
-        </div>
-      </div>
-
-      <div className="flex gap-4">
-        <Link
-          href="/jogos"
-          className="bg-green-600 hover:bg-green-500 text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <Calendar size={18} />
-          Ver jogos
+        <Link href="/jogos" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-5 flex flex-col items-center gap-2 transition-colors group">
+          <Calendar className="text-green-400 group-hover:scale-110 transition-transform" size={32} />
+          <h2 className="font-semibold text-white">{t.navMatches}</h2>
+          <p className="text-slate-400 text-sm">{t.homeMatchesDesc}</p>
         </Link>
-        <Link
-          href="/placar"
-          className="bg-slate-700 hover:bg-slate-600 text-white font-semibold px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <BarChart3 size={18} />
-          Ranking
+        <Link href="/resultados" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-5 flex flex-col items-center gap-2 transition-colors group">
+          <Trophy className="text-yellow-400 group-hover:scale-110 transition-transform" size={32} />
+          <h2 className="font-semibold text-white">{t.homeScoring}</h2>
+          <p className="text-slate-400 text-sm">{t.homeScoringDesc}</p>
+        </Link>
+        <Link href="/placar" className="bg-slate-800 hover:bg-slate-700 rounded-xl p-5 flex flex-col items-center gap-2 transition-colors group">
+          <BarChart3 className="text-blue-400 group-hover:scale-110 transition-transform" size={32} />
+          <h2 className="font-semibold text-white">{t.navRanking}</h2>
+          <p className="text-slate-400 text-sm">{t.homeRankingDesc}</p>
         </Link>
       </div>
 
       <p className="text-slate-500 text-sm flex items-center gap-1">
         <LogIn size={14} />
-        Faça login com Google para participar
+        {t.homeLoginPrompt}
       </p>
     </div>
   );

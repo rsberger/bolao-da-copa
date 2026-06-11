@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { flagUrl, formatMatchDate, isPredictionLocked } from "@/lib/matches";
+import { useState, useEffect } from "react";
+import { flagUrl, formatMatchDate, isPredictionLocked, translateTeamName, countryName, parseMatchDate } from "@/lib/matches";
+import { savePredictionAction } from "@/app/actions";
+import { useT, useLocale } from "@/lib/i18n/context";
 import type { Match, Prediction } from "@/lib/matches";
 import { Lock, CheckCircle, Clock } from "lucide-react";
 
@@ -13,48 +14,71 @@ type Props = {
 };
 
 export function MatchCard({ match, prediction: initialPrediction, userId }: Props) {
+  const t = useT();
+  const locale = useLocale();
   const [prediction, setPrediction] = useState(initialPrediction);
   const [home, setHome] = useState(String(initialPrediction?.home_score ?? ""));
   const [away, setAway] = useState(String(initialPrediction?.away_score ?? ""));
+
+  useEffect(() => {
+    setPrediction(initialPrediction);
+    setHome(String(initialPrediction?.home_score ?? ""));
+    setAway(String(initialPrediction?.away_score ?? ""));
+  }, [initialPrediction?.id, initialPrediction?.home_score, initialPrediction?.away_score]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const locked = isPredictionLocked(match);
+  const [locked, setLocked] = useState(() => isPredictionLocked(match));
+
+  useEffect(() => {
+    if (locked) return;
+    const ms = parseMatchDate(match.match_date).getTime() - Date.now();
+    if (ms <= 0) { setLocked(true); return; }
+    // setTimeout max is ~24.8 days; skip timer for far-future matches
+    const MAX_TIMEOUT = 2_147_483_647;
+    if (ms > MAX_TIMEOUT) return;
+    const timer = setTimeout(() => setLocked(true), ms);
+    return () => clearTimeout(timer);
+  }, [match.match_date, locked]);
+
   const canPredict = !!userId && !locked;
 
   async function savePrediction() {
     if (!userId || home === "" || away === "") return;
     setSaving(true);
-
-    const supabase = createClient();
-    const payload = {
-      user_id: userId,
-      match_id: match.id,
-      home_score: parseInt(home),
-      away_score: parseInt(away),
-    };
-
-    if (prediction) {
-      await supabase.from("predictions").update(payload).eq("id", prediction.id);
-    } else {
-      const { data } = await supabase.from("predictions").insert(payload).select().single();
-      if (data) setPrediction(data);
+    const { predictionId, error } = await savePredictionAction(match.id, parseInt(home), parseInt(away));
+    if (!error && predictionId && !prediction) {
+      setPrediction({ id: predictionId, user_id: userId, match_id: match.id, home_score: parseInt(home), away_score: parseInt(away), points: 0 });
     }
-
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
+
+  const stageMap: Record<string, string> = {
+    "Grupos":        t.stageGrupos,
+    "Trinta e dois": t.stageTrintaDois,
+    "Oitavas":       t.stageOitavas,
+    "Quartas":       t.stageQuartas,
+    "Semi":          t.stageSemi,
+    "Terceiro":      t.stageTerceiro,
+    "Final":         t.stageFinal,
+  };
+  const stageLabel = stageMap[match.stage] ?? match.stage;
+  const homeTeam = match.home_flag
+    ? (countryName(match.home_flag, locale) ?? match.home_team)
+    : translateTeamName(match.home_team, t);
+  const awayTeam = match.away_flag
+    ? (countryName(match.away_flag, locale) ?? match.away_team)
+    : translateTeamName(match.away_team, t);
 
   const resultLabel = match.is_finished
     ? `${match.home_score} × ${match.away_score}`
     : null;
 
   const pointsBadge = match.is_finished && prediction
-    ? prediction.points === 10
-      ? { label: "+10", color: "bg-green-600" }
-      : prediction.points === 5
-      ? { label: "+5", color: "bg-blue-600" }
+    ? prediction.points > 0
+      ? { label: `+${prediction.points}`, color: prediction.points >= 5 ? "bg-green-600" : "bg-blue-600" }
       : { label: "0", color: "bg-slate-600" }
     : null;
 
@@ -62,16 +86,14 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
     <div className={`bg-slate-800 rounded-xl p-4 flex flex-col gap-3 border ${
       match.is_finished ? "border-slate-700" : "border-slate-700 hover:border-slate-500 transition-colors"
     }`}>
-      {/* Cabeçalho */}
       <div className="flex items-center justify-between text-xs text-slate-500">
-        <span className="flex items-center gap-1">
+        <span className="flex items-center gap-1" suppressHydrationWarning>
           <Clock size={11} />
-          {formatMatchDate(match.match_date)}
+          <span suppressHydrationWarning>{formatMatchDate(match.match_date, locale)}</span>
         </span>
-        <span>{match.stage}{match.group_name ? ` · Grupo ${match.group_name}` : ""}</span>
+        <span>{stageLabel}{match.group_name ? ` · ${t.group} ${match.group_name}` : ""}</span>
       </div>
 
-      {/* Times e placar */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1 text-center">
           <div className="flex justify-center mb-1">
@@ -79,7 +101,7 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
               ? <img src={flagUrl(match.home_flag)!} alt={match.home_team} className="w-10 h-7 object-cover rounded shadow" />
               : <span className="text-2xl">🏳️</span>}
           </div>
-          <div className="font-semibold text-white text-sm mt-1">{match.home_team}</div>
+          <div className="font-semibold text-white text-sm mt-1">{homeTeam}</div>
         </div>
 
         <div className="text-center shrink-0">
@@ -101,15 +123,14 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
               ? <img src={flagUrl(match.away_flag)!} alt={match.away_team} className="w-10 h-7 object-cover rounded shadow" />
               : <span className="text-2xl">🏳️</span>}
           </div>
-          <div className="font-semibold text-white text-sm mt-1">{match.away_team}</div>
+          <div className="font-semibold text-white text-sm mt-1">{awayTeam}</div>
         </div>
       </div>
 
-      {/* Palpite */}
       {userId && (
         <div className="border-t border-slate-700 pt-3">
           <p className="text-xs text-slate-500 mb-2 text-center">
-            {locked ? "Seu palpite" : "Seu palpite (antes do apito)"}
+            {locked ? t.yourPrediction : t.yourPredictionOpen}
           </p>
           <div className="flex items-center justify-center gap-2">
             <input
@@ -140,18 +161,18 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
               className="mt-3 w-full py-2 rounded-lg text-sm font-medium transition-colors bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white flex items-center justify-center gap-2"
             >
               {saved ? (
-                <><CheckCircle size={14} /> Salvo!</>
+                <><CheckCircle size={14} /> {t.saved}</>
               ) : saving ? (
-                "Salvando..."
+                t.saving
               ) : (
-                "Salvar palpite"
+                t.savePrediction
               )}
             </button>
           )}
 
           {locked && !match.is_finished && (
             <div className="mt-2 flex items-center justify-center gap-1 text-xs text-slate-500">
-              <Lock size={11} /> Palpites encerrados
+              <Lock size={11} /> {t.predictionsClosed}
             </div>
           )}
         </div>
@@ -159,7 +180,7 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
 
       {!userId && !match.is_finished && (
         <p className="text-xs text-slate-600 text-center border-t border-slate-700 pt-3">
-          Faça login para apostar
+          {t.loginToPredict}
         </p>
       )}
     </div>
