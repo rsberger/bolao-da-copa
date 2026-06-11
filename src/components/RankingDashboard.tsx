@@ -32,6 +32,7 @@ type Props = {
   missingMatchCount: number;
   missingChampion: boolean;
   finishedPredsById: Record<string, number>;
+  geloUserIds: string[];
 };
 
 function Avatar({ player, size = 40 }: { player: Leader; size?: number }) {
@@ -69,10 +70,45 @@ function onFireTier(finishedPreds: number): typeof TIERS[number] {
   return TIERS[0];
 }
 
-function useBadges(leaders: Leader[], finishedPredsById: Record<string, number>) {
+function computeRelampago(leaders: Leader[], roundLeaders: RoundLeader[]): string | null {
+  if (roundLeaders.length === 0) return null;
+  const roundMap = new Map(roundLeaders.map((r) => [r.id, r.points]));
+
+  // Pre-round score = total_points minus this round's points
+  const preRound = leaders.map((l) => ({
+    id: l.id,
+    pre: Number(l.total_points) - (roundMap.get(l.id) ?? 0),
+  }));
+
+  // Sort pre-round to get previous rank (desc)
+  const sorted = [...preRound].sort((a, b) => b.pre - a.pre);
+  const prevRankMap = new Map(sorted.map((p, i) => [p.id, i + 1]));
+
+  // Current rank map
+  const currRankMap = new Map(leaders.map((l, i) => [l.id, i + 1]));
+
+  let bestDelta = 0;
+  let bestId: string | null = null;
+  for (const l of leaders) {
+    const prev = prevRankMap.get(l.id) ?? 0;
+    const curr = currRankMap.get(l.id) ?? 0;
+    const delta = prev - curr; // positive = climbed
+    if (delta > bestDelta) { bestDelta = delta; bestId = l.id; }
+  }
+  return bestDelta >= 2 ? bestId : null; // at least 2 positions gained
+}
+
+function useBadges(
+  leaders: Leader[],
+  roundLeaders: RoundLeader[],
+  finishedPredsById: Record<string, number>,
+  geloUserIds: string[],
+) {
   const t = useT();
   const maxPreds = Math.max(...leaders.map((l) => Number(l.total_predictions)));
   const lastPlayerId = leaders[leaders.length - 1]?.id;
+  const geloSet = new Set(geloUserIds);
+  const relampago = computeRelampago(leaders, roundLeaders);
 
   return (player: Leader, rank: number): Badge[] => {
     const badges: Badge[] = [];
@@ -83,12 +119,13 @@ function useBadges(leaders: Leader[], finishedPredsById: Record<string, number>)
     const accuracyOnFinished = finishedPreds > 0 ? hits / finishedPreds : 0;
     const isLast = player.id === lastPlayerId;
 
-    if (rank === 1 && preds > 0)                        badges.push({ emoji: "🏆", label: t.badgeLeader,    desc: t.badgeLeaderDesc,    color: "bg-yellow-500/20 text-yellow-300" });
-    if (isLast)                                         badges.push({ emoji: "🏮", label: t.badgeLantern,   desc: t.badgeLanternDesc,   color: "bg-red-500/20 text-red-400" });
-    if (exacts >= 1)                                    badges.push({ emoji: "🎯", label: t.badgeSniper,    desc: t.badgeSniperDesc,    color: "bg-green-500/20 text-green-300",   tier: sniperTier(exacts) });
-    if (accuracyOnFinished === 1 && finishedPreds >= 1) badges.push({ emoji: "✨", label: t.badgePerfect,   desc: t.badgePerfectDesc,   color: "bg-purple-500/20 text-purple-300" });
-    else if (accuracyOnFinished >= 0.7 && finishedPreds >= 3) badges.push({ emoji: "🔥", label: t.badgeOnFire, desc: t.badgeOnFireDesc, color: "bg-orange-500/20 text-orange-300", tier: onFireTier(finishedPreds) });
-    if (preds === maxPreds && preds > 0)                badges.push({ emoji: "📊", label: t.badgeDedicated, desc: t.badgeDedicatedDesc, color: "bg-blue-500/20 text-blue-300" });
+    if (rank === 1 && preds > 0)                             badges.push({ emoji: "🏆", label: t.badgeLeader,    desc: t.badgeLeaderDesc,    color: "bg-yellow-500/20 text-yellow-300" });
+    if (isLast)                                              badges.push({ emoji: "🏮", label: t.badgeLantern,   desc: t.badgeLanternDesc,   color: "bg-red-500/20 text-red-400" });
+    if (exacts >= 1)                                         badges.push({ emoji: "🎯", label: t.badgeSniper,    desc: t.badgeSniperDesc,    color: "bg-green-500/20 text-green-300", tier: sniperTier(exacts) });
+    if (accuracyOnFinished >= 0.7 && finishedPreds >= 3)     badges.push({ emoji: "🔥", label: t.badgeOnFire,   desc: t.badgeOnFireDesc,    color: "bg-orange-500/20 text-orange-300", tier: onFireTier(finishedPreds) });
+    if (preds === maxPreds && preds > 0)                     badges.push({ emoji: "📊", label: t.badgeDedicated, desc: t.badgeDedicatedDesc, color: "bg-blue-500/20 text-blue-300" });
+    if (geloSet.has(player.id))                              badges.push({ emoji: "🧊", label: t.badgeGelo,      desc: t.badgeGeloDesc,      color: "bg-cyan-500/20 text-cyan-300" });
+    if (player.id === relampago)                             badges.push({ emoji: "⚡", label: t.badgeRelampago, desc: t.badgeRelampaoDesc,  color: "bg-yellow-500/20 text-yellow-200" });
     return badges;
   };
 }
@@ -215,10 +252,10 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
   );
 }
 
-export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, championPicks, myChampionPick, missingMatchCount, missingChampion, finishedPredsById }: Props) {
+export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, championPicks, myChampionPick, missingMatchCount, missingChampion, finishedPredsById, geloUserIds }: Props) {
   const t = useT();
   const locale = useLocale();
-  const getBadges = useBadges(leaders, finishedPredsById);
+  const getBadges = useBadges(leaders, roundLeaders, finishedPredsById, geloUserIds);
 
   const hasData = leaders.length > 0 && leaders.some((l) => l.total_predictions > 0);
 
@@ -585,11 +622,11 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
       {(() => {
         const allBadges = [
           { emoji: "🏆", label: t.badgeLeader,    desc: t.badgeLeaderDesc,    color: "bg-yellow-500/20 text-yellow-300" },
-          { emoji: "🎯", label: t.badgeSniper,    desc: t.badgeSniperDesc,    color: "bg-green-500/20 text-green-300" },
-          { emoji: "✨", label: t.badgePerfect,   desc: t.badgePerfectDesc,   color: "bg-purple-500/20 text-purple-300" },
           { emoji: "🔥", label: t.badgeOnFire,    desc: t.badgeOnFireDesc,    color: "bg-orange-500/20 text-orange-300" },
           { emoji: "📊", label: t.badgeDedicated, desc: t.badgeDedicatedDesc, color: "bg-blue-500/20 text-blue-300" },
           { emoji: "🏮", label: t.badgeLantern,   desc: t.badgeLanternDesc,   color: "bg-red-500/20 text-red-400" },
+          { emoji: "🧊", label: t.badgeGelo,      desc: t.badgeGeloDesc,      color: "bg-cyan-500/20 text-cyan-300" },
+          { emoji: "⚡", label: t.badgeRelampago, desc: t.badgeRelampaoDesc,  color: "bg-yellow-500/20 text-yellow-200" },
         ];
         return (
           <div className="bg-slate-800 rounded-xl p-5 space-y-3">

@@ -48,6 +48,26 @@ export default async function PlacarPage() {
     .select("user_id")
     .not("points", "is", null);
 
+  // Gelo na Veia: users who predicted 0×0 in a match that ended 0×0
+  const { data: zeroMatches } = await supabase
+    .from("matches")
+    .select("id")
+    .eq("home_score", 0)
+    .eq("away_score", 0)
+    .eq("is_finished", true);
+
+  const zeroMatchIds = (zeroMatches ?? []).map((m) => m.id);
+  let geloUserIds: string[] = [];
+  if (zeroMatchIds.length > 0) {
+    const { data: geloPreds } = await supabase
+      .from("predictions")
+      .select("user_id")
+      .in("match_id", zeroMatchIds)
+      .eq("home_score", 0)
+      .eq("away_score", 0);
+    geloUserIds = [...new Set((geloPreds ?? []).map((p) => p.user_id))];
+  }
+
   const finishedPredsById: Record<string, number> = {};
   for (const row of finishedPredRows ?? []) {
     finishedPredsById[row.user_id] = (finishedPredsById[row.user_id] ?? 0) + 1;
@@ -105,6 +125,7 @@ export default async function PlacarPage() {
       missingMatchCount={missingMatchCount}
       missingChampion={missingChampion}
       finishedPredsById={finishedPredsById}
+      geloUserIds={geloUserIds}
     />
   );
 }
