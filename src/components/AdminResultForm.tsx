@@ -9,7 +9,7 @@ type Props = { matches: Match[] };
 
 export function AdminResultForm({ matches }: Props) {
   const router = useRouter();
-  const [matchId, setMatchId] = useState(matches[0]?.id ?? "");
+  const [matchId, setMatchId] = useState(() => matches.filter((m) => !m.is_finished)[0]?.id ?? "");
   const [home, setHome] = useState("");
   const [away, setAway] = useState("");
   const [saving, setSaving] = useState(false);
@@ -17,6 +17,7 @@ export function AdminResultForm({ matches }: Props) {
   const [success, setSuccess] = useState("");
 
   const unfinished = matches.filter((m) => !m.is_finished);
+  // matchId must init from unfinished[0], not matches[0], to avoid submitting a finished match
 
   const selectedMatch = unfinished.find((m) => m.id === matchId);
 
