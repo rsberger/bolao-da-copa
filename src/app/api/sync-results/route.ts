@@ -18,10 +18,13 @@ async function log(startedAt: string, updatedMatches: number, totalApi: number, 
 
 // Called by Vercel Cron every 30 min. Also callable manually via GET with ?trigger=manual.
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (cronSecret) {
+    const authHeader = request.headers.get("authorization");
+    const querySecret = new URL(request.url).searchParams.get("secret");
+    if (authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
   }
 
   const trigger = new URL(request.url).searchParams.get("trigger") ?? "cron";
