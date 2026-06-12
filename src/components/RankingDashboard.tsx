@@ -33,6 +33,7 @@ type Props = {
   missingChampion: boolean;
   finishedPredsById: Record<string, number>;
   geloUserIds: string[];
+  zebraCountById: Record<string, number>;
 };
 
 function Avatar({ player, size = 40 }: { player: Leader; size?: number }) {
@@ -70,6 +71,13 @@ function onFireTier(finishedPreds: number): typeof TIERS[number] {
   return TIERS[0];
 }
 
+function zebraTier(count: number): typeof TIERS[number] {
+  if (count >= 10) return TIERS[3];
+  if (count >= 6)  return TIERS[2];
+  if (count >= 3)  return TIERS[1];
+  return TIERS[0];
+}
+
 function computeRelampago(leaders: Leader[], roundLeaders: RoundLeader[]): string | null {
   if (roundLeaders.length === 0) return null;
   const roundMap = new Map(roundLeaders.map((r) => [r.id, r.points]));
@@ -103,6 +111,7 @@ function useBadges(
   roundLeaders: RoundLeader[],
   finishedPredsById: Record<string, number>,
   geloUserIds: string[],
+  zebraCountById: Record<string, number>,
 ) {
   const t = useT();
   const maxPreds = Math.max(...leaders.map((l) => Number(l.total_predictions)));
@@ -134,6 +143,8 @@ function useBadges(
     if (geloSet.has(player.id))                              badges.push({ emoji: "🧊", label: t.badgeGelo,      desc: t.badgeGeloDesc,      color: "bg-cyan-500/20 text-cyan-300" });
     if (player.id === relampago)                             badges.push({ emoji: "⚡", label: t.badgeRelampago, desc: t.badgeRelampaoDesc,  color: "bg-yellow-500/20 text-yellow-200" });
     if (cacadoresSet.has(player.id))                        badges.push({ emoji: "🦁", label: t.badgeCacador,   desc: t.badgeCacadorDesc,   color: "bg-amber-500/20 text-amber-300" });
+    const zebraCount = zebraCountById[player.id] ?? 0;
+    if (zebraCount >= 1)                                    badges.push({ emoji: "🦓", label: t.badgeZebraLabel, desc: t.badgeZebraDesc,     color: "bg-teal-500/20 text-teal-300", tier: zebraTier(zebraCount) });
     return badges;
   };
 }
@@ -260,10 +271,10 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
   );
 }
 
-export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, championPicks, myChampionPick, missingMatchCount, missingChampion, finishedPredsById, geloUserIds }: Props) {
+export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, championPicks, myChampionPick, missingMatchCount, missingChampion, finishedPredsById, geloUserIds, zebraCountById }: Props) {
   const t = useT();
   const locale = useLocale();
-  const getBadges = useBadges(leaders, roundLeaders, finishedPredsById, geloUserIds);
+  const getBadges = useBadges(leaders, roundLeaders, finishedPredsById, geloUserIds, zebraCountById);
 
   const hasData = leaders.length > 0 && leaders.some((l) => l.total_predictions > 0);
 

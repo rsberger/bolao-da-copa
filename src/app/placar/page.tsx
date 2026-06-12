@@ -85,6 +85,39 @@ export default async function PlacarPage() {
     finishedPredsById[row.user_id] = (finishedPredsById[row.user_id] ?? 0) + 1;
   }
 
+  // Zebra badge: predicted the winning team in a match where <30% of players did
+  const { data: finishedMatchesForZebra } = await supabase
+    .from("matches")
+    .select("id, home_score, away_score")
+    .eq("is_finished", true)
+    .not("home_score", "is", null);
+
+  const finishedMatchIds = (finishedMatchesForZebra ?? []).map((m) => m.id);
+  const zebraCountById: Record<string, number> = {};
+
+  if (finishedMatchIds.length > 0) {
+    const { data: allFinishedPreds } = await supabase
+      .from("predictions")
+      .select("user_id, match_id, home_score, away_score")
+      .in("match_id", finishedMatchIds);
+
+    for (const match of finishedMatchesForZebra ?? []) {
+      const outcome = match.home_score > match.away_score ? "home"
+        : match.away_score > match.home_score ? "away" : "draw";
+      const matchPreds = (allFinishedPreds ?? []).filter((p) => p.match_id === match.id);
+      if (matchPreds.length === 0) continue;
+      const correct = matchPreds.filter((p) => {
+        const o = p.home_score > p.away_score ? "home" : p.away_score > p.home_score ? "away" : "draw";
+        return o === outcome;
+      });
+      if (correct.length / matchPreds.length < 0.30) {
+        for (const p of correct) {
+          zebraCountById[p.user_id] = (zebraCountById[p.user_id] ?? 0) + 1;
+        }
+      }
+    }
+  }
+
   // Missing predictions alert
   let missingMatchCount = 0;
   let missingChampion = false;
@@ -138,6 +171,7 @@ export default async function PlacarPage() {
       missingChampion={missingChampion}
       finishedPredsById={finishedPredsById}
       geloUserIds={geloUserIds}
+      zebraCountById={zebraCountById}
     />
   );
 }
