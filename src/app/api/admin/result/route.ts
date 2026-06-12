@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -25,6 +26,9 @@ export async function POST(req: Request) {
 
   await admin.rpc("calculate_match_points", { p_match_id: matchId });
   await admin.rpc("calculate_champion_points");
+
+  revalidatePath("/jogos");
+  revalidatePath("/placar");
 
   return NextResponse.json({ ok: true });
 }

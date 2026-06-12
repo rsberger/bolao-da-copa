@@ -18,8 +18,15 @@ export function AdminResultForm({ matches }: Props) {
 
   const unfinished = matches.filter((m) => !m.is_finished);
 
+  const selectedMatch = unfinished.find((m) => m.id === matchId);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!selectedMatch) return;
+    const confirmed = window.confirm(
+      `Confirmar resultado:\n${selectedMatch.home_team} ${home} × ${away} ${selectedMatch.away_team}`
+    );
+    if (!confirmed) return;
     setSaving(true);
     setError("");
     setSuccess("");
@@ -53,11 +60,15 @@ export function AdminResultForm({ matches }: Props) {
           onChange={(e) => setMatchId(e.target.value)}
           className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-green-500"
         >
-          {unfinished.map((m) => (
-            <option key={m.id} value={m.id}>
-              {m.home_team} × {m.away_team}
-            </option>
-          ))}
+          {unfinished.map((m) => {
+            const d = new Date(m.match_date);
+            const label = d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+            return (
+              <option key={m.id} value={m.id}>
+                {label} — {m.home_team} × {m.away_team}
+              </option>
+            );
+          })}
         </select>
       </div>
 
