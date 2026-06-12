@@ -16,8 +16,7 @@ export default async function PlacarPage() {
     .order("total_predictions", { ascending: false })
     .order("name", { ascending: true });
 
-  // Round ranking: all finished matches within 27h before the most recent finished match
-  // (27h window handles same-day clusters across UTC midnight, e.g. Brazil GMT-3 day boundary)
+  // Round ranking: all finished matches on the same Brazil day (GMT-3) as the most recent finished match
   const { data: lastFinished } = await supabase
     .from("matches")
     .select("match_date")
@@ -26,15 +25,24 @@ export default async function PlacarPage() {
     .limit(1)
     .single();
 
-  const windowStart = lastFinished?.match_date
-    ? new Date(new Date(lastFinished.match_date).getTime() - 27 * 60 * 60 * 1000).toISOString()
+  // Convert most recent match to Brazil time (UTC-3) to get the local calendar day
+  const BRT_OFFSET_MS = 3 * 60 * 60 * 1000;
+  const brazilDay = lastFinished?.match_date
+    ? new Date(new Date(lastFinished.match_date).getTime() - BRT_OFFSET_MS).toISOString().substring(0, 10)
+    : null; // "YYYY-MM-DD" in Brazil time
+
+  // Brazil day boundaries expressed in UTC: day starts at 03:00 UTC, ends at next day 02:59:59 UTC
+  const dayStartUTC = brazilDay ? `${brazilDay}T03:00:00+00:00` : null;
+  const dayEndUTC   = brazilDay
+    ? new Date(new Date(`${brazilDay}T03:00:00+00:00`).getTime() + 24 * 60 * 60 * 1000).toISOString()
     : null;
 
-  const { data: recentMatches } = windowStart ? await supabase
+  const { data: recentMatches } = dayStartUTC && dayEndUTC ? await supabase
     .from("matches")
     .select("id, home_team, away_team")
     .eq("is_finished", true)
-    .gte("match_date", windowStart) : { data: [] };
+    .gte("match_date", dayStartUTC)
+    .lt("match_date", dayEndUTC) : { data: [] };
 
   let roundLeaders: { id: string; name: string | null; avatar_url: string | null; points: number }[] = [];
   if (recentMatches && recentMatches.length > 0) {
