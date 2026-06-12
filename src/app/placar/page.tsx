@@ -16,13 +16,23 @@ export default async function PlacarPage() {
     .order("total_predictions", { ascending: false })
     .order("name", { ascending: true });
 
-  // Last 16 finished matches for round ranking
-  const { data: recentMatches } = await supabase
+  // Round ranking: all finished matches on the same calendar day as the most recent finished match
+  const { data: lastFinished } = await supabase
+    .from("matches")
+    .select("match_date")
+    .eq("is_finished", true)
+    .order("match_date", { ascending: false })
+    .limit(1)
+    .single();
+
+  const roundDay = lastFinished?.match_date?.substring(0, 10) ?? null; // "YYYY-MM-DD"
+
+  const { data: recentMatches } = roundDay ? await supabase
     .from("matches")
     .select("id, home_team, away_team")
     .eq("is_finished", true)
-    .order("match_date", { ascending: false })
-    .limit(16);
+    .gte("match_date", `${roundDay}T00:00:00`)
+    .lte("match_date", `${roundDay}T23:59:59`) : { data: [] };
 
   let roundLeaders: { id: string; name: string | null; avatar_url: string | null; points: number }[] = [];
   if (recentMatches && recentMatches.length > 0) {
