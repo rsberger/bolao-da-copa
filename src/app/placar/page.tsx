@@ -16,7 +16,8 @@ export default async function PlacarPage() {
     .order("total_predictions", { ascending: false })
     .order("name", { ascending: true });
 
-  // Round ranking: all finished matches on the same calendar day as the most recent finished match
+  // Round ranking: all finished matches within 27h before the most recent finished match
+  // (27h window handles same-day clusters across UTC midnight, e.g. Brazil GMT-3 day boundary)
   const { data: lastFinished } = await supabase
     .from("matches")
     .select("match_date")
@@ -25,14 +26,15 @@ export default async function PlacarPage() {
     .limit(1)
     .single();
 
-  const roundDay = lastFinished?.match_date?.substring(0, 10) ?? null; // "YYYY-MM-DD"
+  const windowStart = lastFinished?.match_date
+    ? new Date(new Date(lastFinished.match_date).getTime() - 27 * 60 * 60 * 1000).toISOString()
+    : null;
 
-  const { data: recentMatches } = roundDay ? await supabase
+  const { data: recentMatches } = windowStart ? await supabase
     .from("matches")
     .select("id, home_team, away_team")
     .eq("is_finished", true)
-    .gte("match_date", `${roundDay}T00:00:00`)
-    .lte("match_date", `${roundDay}T23:59:59`) : { data: [] };
+    .gte("match_date", windowStart) : { data: [] };
 
   let roundLeaders: { id: string; name: string | null; avatar_url: string | null; points: number }[] = [];
   if (recentMatches && recentMatches.length > 0) {
