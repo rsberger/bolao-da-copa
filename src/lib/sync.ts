@@ -51,14 +51,15 @@ export async function syncResults(): Promise<SyncResult> {
 
   const resolve = buildResolver(allDbMatches ?? []);
 
-  // Build lookup of unfinished matches with resolved placeholder names
-  const unfinished = (allDbMatches ?? [])
-    .filter(m => !m.is_finished)
-    .map(m => ({
-      id: m.id,
-      rHome: resolve(m.home_team).name,
-      rAway: resolve(m.away_team).name,
-    }));
+  // Build lookups: unfinished and finished matches with resolved placeholder names
+  const allResolved = (allDbMatches ?? []).map(m => ({
+    id: m.id,
+    rHome: resolve(m.home_team).name,
+    rAway: resolve(m.away_team).name,
+    is_finished: m.is_finished,
+    home_score: m.home_score,
+    away_score: m.away_score,
+  }));
 
   let updated = 0;
 
@@ -70,10 +71,13 @@ export async function syncResults(): Promise<SyncResult> {
 
     if (homeScore === null || awayScore === null) continue;
 
-    const dbMatch = unfinished.find(
+    const dbMatch = allResolved.find(
       (m) => m.rHome === homeTeam && m.rAway === awayTeam
     );
     if (!dbMatch) continue;
+
+    // Skip if already finished with the correct score
+    if (dbMatch.is_finished && dbMatch.home_score === homeScore && dbMatch.away_score === awayScore) continue;
 
     await supabase
       .from("matches")
