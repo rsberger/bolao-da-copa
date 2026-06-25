@@ -102,31 +102,57 @@ function h2hStats(
   return stats;
 }
 
+// Step 2: overall gd → gf → FIFA rank (applied when h2h can't separate)
+function applyStep2(teams: Standing[]): Standing[] {
+  return [...teams].sort(
+    (a, b) => b.gd - a.gd || b.gf - a.gf || fifaRank(a.team) - fifaRank(b.team)
+  );
+}
+
 // Sort a group of teams that are already equal on overall points,
-// applying FIFA tiebreaker rules.
+// applying FIFA tiebreaker rules recursively.
+//
+// Step 1 (applied to the full tied bucket, then recursed on sub-buckets):
+//   h2h pts → h2h gd → h2h gf
+// If a sub-group is still fully tied after step 1, move to step 2.
+// If step 1 separates some teams, recurse on the remaining tied sub-groups
+// (re-computing h2h with only those teams, per FIFA rules).
 function resolveTied(teams: Standing[], groupMatches: Match[]): Standing[] {
   if (teams.length <= 1) return teams;
 
   const h2h = h2hStats(teams, groupMatches);
 
-  // Sort by h2h pts → h2h gd → h2h gf → overall gd → overall gf → alpha
   const sorted = [...teams].sort((a, b) => {
     const ha = h2h.get(a.team)!;
     const hb = h2h.get(b.team)!;
-    return (
-      hb.pts - ha.pts ||
-      hb.gd  - ha.gd  ||
-      hb.gf  - ha.gf  ||
-      b.gd   - a.gd   ||
-      b.gf   - a.gf   ||
-      fifaRank(a.team) - fifaRank(b.team)
-    );
+    return hb.pts - ha.pts || hb.gd - ha.gd || hb.gf - ha.gf;
   });
 
-  // After applying h2h, check if sub-groups are still fully tied on h2h pts.
-  // If so, we could recurse — but for practical purposes the sort above is sufficient
-  // (same comparator for all pairs in the group).
-  return sorted;
+  const result: Standing[] = [];
+  let i = 0;
+  while (i < sorted.length) {
+    let j = i + 1;
+    const ha = h2h.get(sorted[i].team)!;
+    while (j < sorted.length) {
+      const hb = h2h.get(sorted[j].team)!;
+      if (hb.pts !== ha.pts || hb.gd !== ha.gd || hb.gf !== ha.gf) break;
+      j++;
+    }
+    const bucket = sorted.slice(i, j);
+    if (bucket.length > 1) {
+      if (bucket.length === teams.length) {
+        // All teams still tied on every h2h criterion — move to step 2
+        result.push(...applyStep2(bucket));
+      } else {
+        // Some teams broke away; recurse on this sub-group with fresh h2h
+        result.push(...resolveTied(bucket, groupMatches));
+      }
+    } else {
+      result.push(...bucket);
+    }
+    i = j;
+  }
+  return result;
 }
 
 export function calcGroupStandings(matches: Match[]): GroupStandings {
@@ -201,8 +227,12 @@ function getLoser(m: Match): ResolvedTeam | null {
     : { name: m.home_team, flag: m.home_flag };
 }
 
+// Manual overrides: keyed by group letter, value is [1st, 2nd, 3rd, 4th] team names.
+// When set, these take precedence over computed standings for that group.
+export type GroupOverrides = Record<string, string[]>;
+
 // Exported so sync.ts can resolve placeholder team names for knockout matches.
-export function buildResolver(allMatches: Match[]): (placeholder: string) => ResolvedTeam {
+export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {}, thirdsOverride: string[] | null = null): (placeholder: string) => ResolvedTeam {
   const byDate = (a: Match, b: Match) =>
     new Date(a.match_date).getTime() - new Date(b.match_date).getTime();
 
@@ -228,25 +258,48 @@ export function buildResolver(allMatches: Match[]): (placeholder: string) => Res
   }
   const isGroupDecided = (g: string) => (groupFinishedCount[g] ?? 0) >= 6;
 
+  // Helper: get the Standing for a group+rank, checking overrides first
+  function getGroupTeam(g: string, rank: number): ResolvedTeam | null {
+    if (overrides[g] && overrides[g][rank] !== undefined) {
+      const name = overrides[g][rank];
+      // Find the flag from standings
+      const st = standings[g];
+      const entry = st?.find(s => s.team === name);
+      return { name, flag: entry?.flag ?? null };
+    }
+    if (isGroupDecided(g)) {
+      const st = standings[g];
+      if (st?.[rank]) return { name: st[rank].team, flag: st[rank].flag };
+    }
+    return null;
+  }
+
   return function resolve(placeholder: string): ResolvedTeam {
     let m = placeholder.match(/^([12])º Grupo ([A-L])$/);
     if (m) {
       const rank = parseInt(m[1]) - 1;
       const g = m[2];
-      if (isGroupDecided(g)) {
-        const st = standings[g];
-        if (st?.[rank]) return { name: st[rank].team, flag: st[rank].flag };
-      }
-      return { name: placeholder, flag: null };
+      const team = getGroupTeam(g, rank);
+      return team ?? { name: placeholder, flag: null };
     }
 
     m = placeholder.match(/^Melhor 3º \(([A-L]+)\)$/);
     if (m) {
       const allowed = new Set(m[1].split(""));
-      const allDecided = [...allowed].every(isGroupDecided);
-      if (allDecided) {
-        const eligible = best3rds.filter(s => allowed.has(s.group));
-        if (eligible[0]) return { name: eligible[0].team, flag: eligible[0].flag };
+      // All 12 groups must be decided before we can know which 8 thirds qualify overall
+      const allGroupsDecided = Object.keys(groupMatchCount).every(g => isGroupDecided(g));
+      if (allGroupsDecided) {
+        if (thirdsOverride && thirdsOverride.length >= 8) {
+          // Use manual override: find the first overridden team whose group is in allowed
+          for (const teamName of thirdsOverride) {
+            const st = best3rds.find(s => s.team === teamName);
+            if (st && allowed.has(st.group)) return { name: st.team, flag: st.flag };
+          }
+        }
+        // Take the top 8 thirds overall, then find the one assigned to this slot
+        const top8 = best3rds.slice(0, 8);
+        const match = top8.find(s => allowed.has(s.group));
+        if (match) return { name: match.team, flag: match.flag };
       }
       return { name: placeholder, flag: null };
     }
@@ -289,7 +342,7 @@ export function buildResolver(allMatches: Match[]): (placeholder: string) => Res
   };
 }
 
-export function buildBracket(allMatches: Match[]): {
+export function buildBracket(allMatches: Match[], overrides: GroupOverrides = {}, thirdsOverride: string[] | null = null): {
   r32: BracketMatch[];
   r16: BracketMatch[];
   qf: BracketMatch[];
@@ -307,7 +360,7 @@ export function buildBracket(allMatches: Match[]): {
   const thirdraw = allMatches.find(m => m.stage === "Terceiro") ?? null;
   const finalraw = allMatches.find(m => m.stage === "Final") ?? null;
 
-  const resolve = buildResolver(allMatches);
+  const resolve = buildResolver(allMatches, overrides, thirdsOverride);
 
   function enrich(m: Match, jNum: number): BracketMatch {
     return {
