@@ -278,8 +278,7 @@ export default async function ResultadosPage() {
               <tbody>
                 {allThirds.map((s, i) => {
                   const qualifies = i < 8;
-                  const isLast = i === thirdsWithData.length - 1;
-                  const onBubble = i === 7 || (i < 8 && thirdsWithData[8]?.pts === s.pts);
+                  const isLast = i === allThirds.length - 1;
                   return (
                     <tr key={s.team} className={`border-b border-slate-700/40 last:border-0 ${qualifies ? "bg-green-500/5" : ""} ${i === 7 && !isLast ? "border-b-2 border-green-600/50" : ""}`}>
                       <td className="px-3 py-2.5 text-slate-500 text-xs">{i + 1}</td>
