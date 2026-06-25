@@ -267,8 +267,11 @@ export default async function ResultadosPage() {
                 <tr className="text-xs text-slate-500 uppercase border-b border-slate-700">
                   <th className="text-left px-3 py-2 w-6">#</th>
                   <th className="text-left px-3 py-2">{t.colTeam}</th>
-                  <th className="px-2 py-2 text-center text-slate-400">{t.best8ThirdsGrp}</th>
+                  <th className="px-2 py-2 text-center">{t.best8ThirdsGrp}</th>
                   <th className="px-2 py-2 text-center">{t.colPlayed}</th>
+                  <th className="px-2 py-2 text-center hidden sm:table-cell">{t.colWon}</th>
+                  <th className="px-2 py-2 text-center hidden sm:table-cell">{t.colDrawn}</th>
+                  <th className="px-2 py-2 text-center hidden sm:table-cell">{t.colLost}</th>
                   <th className="px-2 py-2 text-center">{t.colGF}</th>
                   <th className="px-2 py-2 text-center hidden sm:table-cell">{t.colGA}</th>
                   <th className="px-2 py-2 text-center">{t.colGD}</th>
@@ -293,8 +296,11 @@ export default async function ResultadosPage() {
                           {qualifies && <span className="text-green-400 text-xs shrink-0">✓</span>}
                         </div>
                       </td>
-                      <td className="px-2 py-2.5 text-center text-slate-500 text-xs font-mono">{s.group}</td>
+                      <td className="px-2 py-2.5 text-center text-slate-400 text-xs font-mono">{s.group}</td>
                       <td className="px-2 py-2.5 text-center text-slate-400">{s.played}</td>
+                      <td className="px-2 py-2.5 text-center text-slate-400 hidden sm:table-cell">{s.won}</td>
+                      <td className="px-2 py-2.5 text-center text-slate-400 hidden sm:table-cell">{s.drawn}</td>
+                      <td className="px-2 py-2.5 text-center text-slate-400 hidden sm:table-cell">{s.lost}</td>
                       <td className="px-2 py-2.5 text-center text-slate-400">{s.gf}</td>
                       <td className="px-2 py-2.5 text-center text-slate-400 hidden sm:table-cell">{s.ga}</td>
                       <td className="px-2 py-2.5 text-center text-slate-400">{s.gd > 0 ? `+${s.gd}` : s.gd}</td>

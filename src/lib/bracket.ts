@@ -66,6 +66,9 @@ export type Standing = {
   gf: number;
   ga: number;
   played: number;
+  won: number;
+  drawn: number;
+  lost: number;
   group: string;
 };
 
@@ -164,8 +167,8 @@ export function calcGroupStandings(matches: Match[]): GroupStandings {
     const g = m.group_name;
     if (!groups[g]) { groups[g] = new Map(); groupMatches[g] = []; }
     const map = groups[g];
-    if (!map.has(m.home_team)) map.set(m.home_team, { team: m.home_team, flag: m.home_flag, pts: 0, gd: 0, gf: 0, ga: 0, played: 0, group: g });
-    if (!map.has(m.away_team)) map.set(m.away_team, { team: m.away_team, flag: m.away_flag, pts: 0, gd: 0, gf: 0, ga: 0, played: 0, group: g });
+    if (!map.has(m.home_team)) map.set(m.home_team, { team: m.home_team, flag: m.home_flag, pts: 0, gd: 0, gf: 0, ga: 0, played: 0, won: 0, drawn: 0, lost: 0, group: g });
+    if (!map.has(m.away_team)) map.set(m.away_team, { team: m.away_team, flag: m.away_flag, pts: 0, gd: 0, gf: 0, ga: 0, played: 0, won: 0, drawn: 0, lost: 0, group: g });
     groupMatches[g].push(m);
 
     if (!m.is_finished || m.home_score === null || m.away_score === null) continue;
@@ -174,9 +177,9 @@ export function calcGroupStandings(matches: Match[]): GroupStandings {
     home.played++; away.played++;
     home.gf += m.home_score; home.ga += m.away_score;
     away.gf += m.away_score; away.ga += m.home_score;
-    if (m.home_score > m.away_score) { home.pts += 3; }
-    else if (m.away_score > m.home_score) { away.pts += 3; }
-    else { home.pts++; away.pts++; }
+    if (m.home_score > m.away_score) { home.pts += 3; home.won++; away.lost++; }
+    else if (m.away_score > m.home_score) { away.pts += 3; away.won++; home.lost++; }
+    else { home.pts++; home.drawn++; away.pts++; away.drawn++; }
     home.gd = home.gf - home.ga;
     away.gd = away.gf - away.ga;
   }
