@@ -11,25 +11,17 @@ export async function POST(req: Request) {
   const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single();
   if (!profile?.is_admin) return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
 
-  const { matchId, homeScore, awayScore } = await req.json();
-  if (!matchId || homeScore == null || awayScore == null)
-    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
-
+  const { ranking } = await req.json();
   const admin = createAdminClient();
 
-  const { error } = await admin
-    .from("matches")
-    .update({ home_score: homeScore, away_score: awayScore, is_finished: true })
-    .eq("id", matchId);
+  if (!ranking || ranking.length === 0) {
+    await admin.from("thirds_override").delete().eq("id", 1);
+  } else {
+    await admin.from("thirds_override").upsert({ id: 1, ranking }, { onConflict: "id" });
+  }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  await admin.rpc("calculate_match_points", { p_match_id: matchId });
-  await admin.rpc("calculate_champion_points");
-
-  revalidatePath("/jogos");
-  revalidatePath("/placar");
   revalidatePath("/chaveamento");
+  revalidatePath("/resultados");
 
   return NextResponse.json({ ok: true });
 }

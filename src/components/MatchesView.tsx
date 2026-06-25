@@ -151,6 +151,22 @@ export function MatchesView({ matches, predictionMap, userId }: Props) {
   const [view, setView] = useState<View>("grupo");
   const [compact, setCompact] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+  const [hideFinished, setHideFinished] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("hideFinished") === "1";
+  });
+
+  function toggleHideFinished() {
+    setHideFinished((v) => {
+      const next = !v;
+      localStorage.setItem("hideFinished", next ? "1" : "0");
+      return next;
+    });
+  }
+
+  function filterMatches(ms: Match[]) {
+    return hideFinished ? ms.filter((m) => !m.is_finished) : ms;
+  }
 
   function stageLabel(stage: string): string {
     const map: Record<string, string> = {
@@ -304,16 +320,30 @@ export function MatchesView({ matches, predictionMap, userId }: Props) {
         >
           <AlignJustify size={15} /> {t.viewCompact}
         </button>
+        <button
+          onClick={toggleHideFinished}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors border ${
+            hideFinished
+              ? "bg-green-700 border-green-500 text-white"
+              : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+          }`}
+        >
+          <CheckCircle size={15} /> {hideFinished ? t.showFinished : t.hideFinished}
+        </button>
       </div>
 
       {view === "grupo" && (
         <div className="space-y-8">
-          {byGroup.map(([label, groupMatches]) => (
-            <section key={label}>
-              <h2 className="text-lg font-semibold text-slate-300 mb-3 border-b border-slate-700 pb-2">{label}</h2>
-              {renderMatches(groupMatches)}
-            </section>
-          ))}
+          {byGroup.map(([label, groupMatches]) => {
+            const ms = filterMatches(groupMatches);
+            if (ms.length === 0) return null;
+            return (
+              <section key={label}>
+                <h2 className="text-lg font-semibold text-slate-300 mb-3 border-b border-slate-700 pb-2">{label}</h2>
+                {renderMatches(ms)}
+              </section>
+            );
+          })}
         </div>
       )}
 
@@ -349,7 +379,7 @@ export function MatchesView({ matches, predictionMap, userId }: Props) {
                   </div>
                 );
               })()}
-              {renderMatches(countryMatches)}
+              {renderMatches(filterMatches(countryMatches))}
             </div>
           )}
         </div>
@@ -357,41 +387,53 @@ export function MatchesView({ matches, predictionMap, userId }: Props) {
 
       {view === "rodada" && (
         <div className="space-y-8">
-          {byRound.groupRounds.map((roundMatches, i) => roundMatches.length === 0 ? null : (
-            <section key={i}>
-              <h2 className="text-lg font-semibold text-slate-300 mb-3 border-b border-slate-700 pb-2">
-                {t.round} {i + 1}
-                <span className="ml-2 text-sm font-normal text-slate-500" suppressHydrationWarning>
-                  {parseMatchDate(roundMatches[0].match_date).toLocaleDateString(LOCALE_MAP[locale] ?? "pt-BR", { day: "2-digit", month: "2-digit" })}
-                  {roundMatches.length > 1 && " – " + parseMatchDate(roundMatches[roundMatches.length - 1].match_date).toLocaleDateString(LOCALE_MAP[locale] ?? "pt-BR", { day: "2-digit", month: "2-digit" })}
-                </span>
-              </h2>
-              {renderMatches(roundMatches)}
-            </section>
-          ))}
-          {byRound.knockoutRounds.map(({ label, matches: km }) => (
-            <section key={label}>
-              <h2 className="text-lg font-semibold text-slate-300 mb-3 border-b border-slate-700 pb-2">
-                {label}
-                <span className="ml-2 text-sm font-normal text-slate-500" suppressHydrationWarning>
-                  {parseMatchDate(km[0].match_date).toLocaleDateString(LOCALE_MAP[locale] ?? "pt-BR", { day: "2-digit", month: "2-digit" })}
-                  {km.length > 1 && " – " + parseMatchDate(km[km.length - 1].match_date).toLocaleDateString(LOCALE_MAP[locale] ?? "pt-BR", { day: "2-digit", month: "2-digit" })}
-                </span>
-              </h2>
-              {renderMatches(km)}
-            </section>
-          ))}
+          {byRound.groupRounds.map((roundMatches, i) => {
+            const ms = filterMatches(roundMatches);
+            if (ms.length === 0) return null;
+            return (
+              <section key={i}>
+                <h2 className="text-lg font-semibold text-slate-300 mb-3 border-b border-slate-700 pb-2">
+                  {t.round} {i + 1}
+                  <span className="ml-2 text-sm font-normal text-slate-500" suppressHydrationWarning>
+                    {parseMatchDate(ms[0].match_date).toLocaleDateString(LOCALE_MAP[locale] ?? "pt-BR", { day: "2-digit", month: "2-digit" })}
+                    {ms.length > 1 && " – " + parseMatchDate(ms[ms.length - 1].match_date).toLocaleDateString(LOCALE_MAP[locale] ?? "pt-BR", { day: "2-digit", month: "2-digit" })}
+                  </span>
+                </h2>
+                {renderMatches(ms)}
+              </section>
+            );
+          })}
+          {byRound.knockoutRounds.map(({ label, matches: km }) => {
+            const ms = filterMatches(km);
+            if (ms.length === 0) return null;
+            return (
+              <section key={label}>
+                <h2 className="text-lg font-semibold text-slate-300 mb-3 border-b border-slate-700 pb-2">
+                  {label}
+                  <span className="ml-2 text-sm font-normal text-slate-500" suppressHydrationWarning>
+                    {parseMatchDate(ms[0].match_date).toLocaleDateString(LOCALE_MAP[locale] ?? "pt-BR", { day: "2-digit", month: "2-digit" })}
+                    {ms.length > 1 && " – " + parseMatchDate(ms[ms.length - 1].match_date).toLocaleDateString(LOCALE_MAP[locale] ?? "pt-BR", { day: "2-digit", month: "2-digit" })}
+                  </span>
+                </h2>
+                {renderMatches(ms)}
+              </section>
+            );
+          })}
         </div>
       )}
 
       {view === "data" && (
         <div className="space-y-8">
-          {byDate.map(([day, dayMatches]) => (
-            <section key={day}>
-              <h2 className="text-lg font-semibold text-slate-300 mb-3 border-b border-slate-700 pb-2 capitalize">{day}</h2>
-              {renderMatches(dayMatches)}
-            </section>
-          ))}
+          {byDate.map(([day, dayMatches]) => {
+            const ms = filterMatches(dayMatches);
+            if (ms.length === 0) return null;
+            return (
+              <section key={day}>
+                <h2 className="text-lg font-semibold text-slate-300 mb-3 border-b border-slate-700 pb-2 capitalize">{day}</h2>
+                {renderMatches(ms)}
+              </section>
+            );
+          })}
         </div>
       )}
     </div>

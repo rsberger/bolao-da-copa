@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { syncResults } from "@/lib/sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -32,6 +33,9 @@ export async function GET(request: Request) {
 
   try {
     const result = await syncResults();
+    revalidatePath("/jogos");
+    revalidatePath("/placar");
+    revalidatePath("/chaveamento");
     await log(startedAt, result.updated, result.total_finished_from_api, null, trigger);
     return NextResponse.json(result);
   } catch (err: unknown) {

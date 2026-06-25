@@ -18,7 +18,16 @@ export default async function ChaveamentoPage() {
     .order("match_date", { ascending: true });
 
   const matches = (data ?? []) as Match[];
-  const bracket = buildBracket(matches);
+
+  const [{ data: overrideRows }, { data: thirdsRow }] = await Promise.all([
+    supabase.from("group_overrides").select("group_name, ranking"),
+    supabase.from("thirds_override").select("ranking").eq("id", 1).maybeSingle(),
+  ]);
+  const overrides: Record<string, string[]> = {};
+  for (const row of overrideRows ?? []) overrides[row.group_name] = row.ranking;
+  const thirdsOverride: string[] | null = thirdsRow?.ranking ?? null;
+
+  const bracket = buildBracket(matches, overrides, thirdsOverride);
   const halves = getBracketHalves(bracket);
 
   return (

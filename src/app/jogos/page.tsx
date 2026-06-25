@@ -5,6 +5,8 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { ChampionPicker } from "@/components/ChampionPicker";
 import { getLocale } from "@/lib/i18n/server";
 import { translations } from "@/lib/i18n/translations";
+import { buildResolver } from "@/lib/bracket";
+import type { Match } from "@/lib/matches";
 
 export const revalidate = 60;
 
@@ -32,8 +34,23 @@ export default async function JogosPage() {
     (predictions ?? []).map((p) => [p.match_id, p])
   );
 
+  // Resolve placeholder team names (e.g. "1º Grupo B") to actual teams where known
+  const resolve = buildResolver((matches ?? []) as Match[]);
+  const resolvedMatches = (matches ?? []).map((m) => {
+    if (m.stage === "Grupos") return m;
+    const home = resolve(m.home_team);
+    const away = resolve(m.away_team);
+    return {
+      ...m,
+      home_team: home.name,
+      home_flag: home.flag ?? m.home_flag,
+      away_team: away.name,
+      away_flag: away.flag ?? m.away_flag,
+    };
+  });
+
   // Pass all unfinished matches to CountdownTimer — client filters live vs upcoming in real time
-  const unfinishedMatches = (matches ?? []).filter((m) => !m.is_finished);
+  const unfinishedMatches = resolvedMatches.filter((m) => !m.is_finished);
   const nextMatch = unfinishedMatches.find((m) => new Date(m.match_date) > new Date()) ?? null;
 
   // Champion lock: first knockout match (any stage other than Grupos)
@@ -112,7 +129,7 @@ export default async function JogosPage() {
       )}
 
       <MatchesView
-        matches={matches ?? []}
+        matches={resolvedMatches}
         predictionMap={predictionMap}
         userId={user?.id ?? null}
       />

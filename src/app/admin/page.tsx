@@ -6,6 +6,9 @@ import { redirect } from "next/navigation";
 import { AdminSyncButton } from "@/components/AdminSyncButton";
 import { AdminResultForm } from "@/components/AdminResultForm";
 import { AdminRoundResults } from "@/components/AdminRoundResults";
+import { AdminGroupOverrides } from "@/components/AdminGroupOverrides";
+import { AdminThirdsOverride } from "@/components/AdminThirdsOverride";
+import { calcGroupStandings, calcBest3rds } from "@/lib/bracket";
 import { getLocale } from "@/lib/i18n/server";
 import { translations } from "@/lib/i18n/translations";
 import { Calendar, Users } from "lucide-react";
@@ -48,6 +51,52 @@ export default async function AdminPage() {
     .select("*")
     .order("match_date", { ascending: true });
 
+  // Group overrides
+  const { data: overrideRows } = await createAdminClient().from("group_overrides").select("group_name, ranking");
+  const groupOverrides: Record<string, string[]> = {};
+  for (const row of overrideRows ?? []) groupOverrides[row.group_name] = row.ranking;
+  const groupStandings = calcGroupStandings((allMatches ?? []) as any);
+  const allThirds = calcBest3rds(groupStandings);
+  const { data: thirdsRow } = await createAdminClient().from("thirds_override").select("ranking").eq("id", 1).maybeSingle();
+  const thirdsOverride: string[] | null = thirdsRow?.ranking ?? null;
+
+  // Data for AdminRoundResults dropdown
+  const { data: finishedMatchesRaw } = await supabase
+    .from("matches")
+    .select("id, home_team, away_team, home_flag, away_flag, home_score, away_score, match_date, stage, group_name")
+    .eq("is_finished", true)
+    .order("match_date", { ascending: false });
+
+  const finishedMatchIds = (finishedMatchesRaw ?? []).map((m) => m.id);
+  const { data: roundPredictions } = finishedMatchIds.length > 0
+    ? await supabase
+        .from("predictions")
+        .select("match_id, user_id, home_score, away_score, points, profiles(name)")
+        .in("match_id", finishedMatchIds)
+    : { data: [] };
+
+  const predByMatch: Record<string, { user_id: string; home_score: number; away_score: number; points: number | null; profile_name: string | null }[]> = {};
+  for (const p of roundPredictions ?? []) {
+    if (!predByMatch[p.match_id]) predByMatch[p.match_id] = [];
+    predByMatch[p.match_id].push({
+      user_id: p.user_id,
+      home_score: p.home_score,
+      away_score: p.away_score,
+      points: p.points,
+      profile_name: (p as any).profiles?.name ?? null,
+    });
+  }
+  for (const key of Object.keys(predByMatch)) {
+    predByMatch[key].sort((a, b) => (b.points ?? 0) - (a.points ?? 0));
+  }
+
+  const roundResultsRows = (finishedMatchesRaw ?? []).map((m) => ({
+    ...m,
+    home_score: m.home_score ?? 0,
+    away_score: m.away_score ?? 0,
+    predictions: predByMatch[m.id] ?? [],
+  }));
+
   const { data: syncLogs } = await createAdminClient()
     .from("sync_logs")
     .select("started_at, finished_at, updated_matches, total_finished_api, trigger, error")
@@ -83,7 +132,23 @@ export default async function AdminPage() {
 
       <section className="bg-slate-800 rounded-xl p-6 space-y-4">
         <h2 className="text-lg font-semibold text-white">Resultados vs Palpites</h2>
-        <AdminRoundResults />
+        <AdminRoundResults matches={roundResultsRows} />
+      </section>
+
+      <section className="bg-slate-800 rounded-xl p-6 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Classificação dos grupos</h2>
+          <p className="text-slate-400 text-sm mt-1">Override manual caso a FIFA publique uma classificação diferente do cálculo automático.</p>
+        </div>
+        <AdminGroupOverrides standings={groupStandings} overrides={groupOverrides} />
+      </section>
+
+      <section className="bg-slate-800 rounded-xl p-6 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">Melhores 3ºs — override manual</h2>
+          <p className="text-slate-400 text-sm mt-1">Override caso a FIFA publique uma classificação dos 3ºs colocados diferente do cálculo automático.</p>
+        </div>
+        <AdminThirdsOverride allThirds={allThirds} override={thirdsOverride} />
       </section>
 
       <section className="bg-slate-800 rounded-xl p-6 space-y-4">

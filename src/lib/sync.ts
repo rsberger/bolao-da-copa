@@ -2,9 +2,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildResolver } from "@/lib/bracket";
 
 const TEAM_MAP: Record<string, string> = {
-  "Mexico": "México", "South Africa": "África do Sul", "Korea Republic": "Coreia do Sul",
+  "Mexico": "México", "South Africa": "África do Sul", "Korea Republic": "Coreia do Sul", "South Korea": "Coreia do Sul",
   "Czechia": "Tchéquia", "Czech Republic": "Tchéquia", "Canada": "Canadá",
-  "Switzerland": "Suíça", "Qatar": "Qatar", "Bosnia and Herzegovina": "Bósnia-Herzegovina",
+  "Switzerland": "Suíça", "Qatar": "Qatar", "Bosnia and Herzegovina": "Bósnia-Herzegovina", "Bosnia-Herzegovina": "Bósnia-Herzegovina",
   "Brazil": "Brasil", "Morocco": "Marrocos", "Haiti": "Haiti", "Scotland": "Escócia",
   "United States": "Estados Unidos", "USA": "Estados Unidos", "Paraguay": "Paraguai",
   "Australia": "Austrália", "Türkiye": "Turquia", "Turkey": "Turquia",
@@ -12,7 +12,7 @@ const TEAM_MAP: Record<string, string> = {
   "Ivory Coast": "Costa do Marfim", "Côte d'Ivoire": "Costa do Marfim", "Ecuador": "Equador",
   "Netherlands": "Holanda", "Japan": "Japão", "Sweden": "Suécia", "Tunisia": "Tunísia",
   "Belgium": "Bélgica", "Egypt": "Egito", "Iran": "Irã", "New Zealand": "Nova Zelândia",
-  "Spain": "Espanha", "Cape Verde": "Cabo Verde", "Saudi Arabia": "Arábia Saudita",
+  "Spain": "Espanha", "Cape Verde": "Cabo Verde", "Cape Verde Islands": "Cabo Verde", "Saudi Arabia": "Arábia Saudita",
   "Uruguay": "Uruguai", "France": "França", "Senegal": "Senegal", "Iraq": "Iraque",
   "Norway": "Noruega", "Argentina": "Argentina", "Algeria": "Argélia", "Austria": "Áustria",
   "Jordan": "Jordânia", "Portugal": "Portugal", "DR Congo": "Rep. Dem. Congo",
@@ -72,16 +72,22 @@ export async function syncResults(): Promise<SyncResult> {
     if (homeScore === null || awayScore === null) continue;
 
     const dbMatch = allResolved.find(
-      (m) => m.rHome === homeTeam && m.rAway === awayTeam
+      (m) => (m.rHome === homeTeam && m.rAway === awayTeam) ||
+             (m.rHome === awayTeam && m.rAway === homeTeam)
     );
     if (!dbMatch) continue;
 
+    // If teams are stored in reverse order relative to the API, swap scores
+    const swapped = dbMatch.rHome === awayTeam;
+    const dbHomeScore = swapped ? awayScore : homeScore;
+    const dbAwayScore = swapped ? homeScore : awayScore;
+
     // Skip if already finished with the correct score
-    if (dbMatch.is_finished && dbMatch.home_score === homeScore && dbMatch.away_score === awayScore) continue;
+    if (dbMatch.is_finished && dbMatch.home_score === dbHomeScore && dbMatch.away_score === dbAwayScore) continue;
 
     await supabase
       .from("matches")
-      .update({ home_score: homeScore, away_score: awayScore, is_finished: true })
+      .update({ home_score: dbHomeScore, away_score: dbAwayScore, is_finished: true })
       .eq("id", dbMatch.id);
 
     await supabase.rpc("calculate_match_points", { p_match_id: dbMatch.id });
