@@ -244,7 +244,15 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
   const qfraw  = allMatches.filter(m => m.stage === "Quartas").sort(byDate);
   const sfraw  = allMatches.filter(m => m.stage === "Semi").sort(byDate);
 
-  const r32map = new Map(r32raw.map((m, i) => [73 + i, m]));
+  // FIFA 2026 assigns game numbers by bracket position, not by match date.
+  // Mapping: FIFA game# → date-sort index among the 16 R32 matches.
+  const R32_FIFA_TO_IDX: Record<number, number> = {
+    73:0, 74:2, 75:3, 76:1, 77:5, 78:4, 79:6, 80:7,
+    81:9, 82:8, 83:10, 84:11, 85:12, 86:13, 87:14, 88:15,
+  };
+  const r32map = new Map<number, Match>(
+    Object.entries(R32_FIFA_TO_IDX).map(([fifa, idx]) => [parseInt(fifa), r32raw[idx]])
+  );
   const r16map = new Map(r16raw.map((m, i) => [89 + i, m]));
   const qfmap  = new Map(qfraw.map((m, i)  => [97 + i, m]));
   const sfmap  = new Map(sfraw.map((m, i)  => [101 + i, m]));
@@ -375,7 +383,8 @@ export function buildBracket(allMatches: Match[], overrides: GroupOverrides = {}
   }
 
   return {
-    r32: r32raw.map((m, i) => enrich(m, 73 + i)),
+    // FIFA game numbers by date-sort index
+    r32: r32raw.map((m, i) => enrich(m, [73,76,74,75,78,77,79,80,82,81,83,84,85,86,87,88][i] ?? (73+i))),
     r16: r16raw.map((m, i) => enrich(m, 89 + i)),
     qf:  qfraw.map((m, i)  => enrich(m, 97 + i)),
     sf:  sfraw.map((m, i)  => enrich(m, 101 + i)),
@@ -420,10 +429,10 @@ export function getBracketHalves(b: ReturnType<typeof buildBracket>): {
       qf: [g(qf, 0), g(qf, 1)],
       r16: [g(r16, 0), g(r16, 1), g(r16, 4), g(r16, 5)],
       r32: [
-        g(r32, 0), g(r32, 2), // J73, J75 → J89
-        g(r32, 1), g(r32, 4), // J74, J77 → J90
-        g(r32, 10), g(r32, 11), // J83, J84 → J93
-        g(r32, 8), g(r32, 9), // J81, J82 → J94
+        g(r32, 0), g(r32, 3), // J73, J75(FIFA) → R16-1
+        g(r32, 2), g(r32, 5), // J74(FIFA), J77(FIFA) → R16-2
+        g(r32, 10), g(r32, 11), // J83, J84 → R16-5
+        g(r32, 9), g(r32, 8), // J81(FIFA), J82(FIFA) → R16-6
       ],
     },
     right: {
@@ -431,10 +440,10 @@ export function getBracketHalves(b: ReturnType<typeof buildBracket>): {
       qf: [g(qf, 2), g(qf, 3)],
       r16: [g(r16, 2), g(r16, 3), g(r16, 6), g(r16, 7)],
       r32: [
-        g(r32, 3), g(r32, 5), // J76, J78 → J91
-        g(r32, 6), g(r32, 7), // J79, J80 → J92
-        g(r32, 13), g(r32, 15), // J86, J88 → J95
-        g(r32, 12), g(r32, 14), // J85, J87 → J96
+        g(r32, 1), g(r32, 4), // J76(FIFA), J78(FIFA) → R16-3
+        g(r32, 6), g(r32, 7), // J79, J80 → R16-4
+        g(r32, 13), g(r32, 15), // J86, J88 → R16-7
+        g(r32, 12), g(r32, 14), // J85, J87 → R16-8
       ],
     },
   };
