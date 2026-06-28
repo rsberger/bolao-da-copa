@@ -82,12 +82,20 @@ export async function syncResults(): Promise<SyncResult> {
     const dbHomeScore = swapped ? awayScore : homeScore;
     const dbAwayScore = swapped ? homeScore : awayScore;
 
-    // Skip if already finished with the correct score
+    // Penalty winner: only set when match duration is PENALTY_SHOOTOUT
+    let penaltyWinner: 'home' | 'away' | null = null;
+    if (apiMatch.score.duration === "PENALTY_SHOOTOUT") {
+      const apiWinner = apiMatch.score.winner; // "HOME_TEAM" or "AWAY_TEAM"
+      if (apiWinner === "HOME_TEAM") penaltyWinner = swapped ? 'away' : 'home';
+      else if (apiWinner === "AWAY_TEAM") penaltyWinner = swapped ? 'home' : 'away';
+    }
+
+    // Skip if already finished with the correct score and penalty_winner
     if (dbMatch.is_finished && dbMatch.home_score === dbHomeScore && dbMatch.away_score === dbAwayScore) continue;
 
     await supabase
       .from("matches")
-      .update({ home_score: dbHomeScore, away_score: dbAwayScore, is_finished: true })
+      .update({ home_score: dbHomeScore, away_score: dbAwayScore, is_finished: true, penalty_winner: penaltyWinner })
       .eq("id", dbMatch.id);
 
     await supabase.rpc("calculate_match_points", { p_match_id: dbMatch.id });
