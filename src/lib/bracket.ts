@@ -381,7 +381,11 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
       return r ?? { name: placeholder, flag: null };
     }
 
-    // Not a placeholder — return as-is (group stage real team names)
+    // Not a placeholder — look up flag from computed standings
+    for (const st of Object.values(standings)) {
+      const found = st.find(s => s.team === placeholder);
+      if (found) return { name: placeholder, flag: found.flag };
+    }
     return { name: placeholder, flag: null };
   };
 }
