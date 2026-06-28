@@ -105,6 +105,7 @@ function MatchCard({ match, highlight }: { match: BracketMatch | null; highlight
 
   const fin = match.is_finished && match.home_score !== null && match.away_score !== null;
   const pen = fin && match.penalty_winner != null;
+  const hasPenScore = pen && match.penalty_home_score != null && match.penalty_away_score != null;
   const homeWin = fin && (match.home_score! > match.away_score! || match.penalty_winner === 'home');
   const awayWin = fin && (match.away_score! > match.home_score! || match.penalty_winner === 'away');
 
@@ -113,25 +114,33 @@ function MatchCard({ match, highlight }: { match: BracketMatch | null; highlight
       <div className={`flex items-center justify-between ${homeWin ? "bg-slate-700" : ""}`}>
         <TeamRow team={match.home_r} isWinner={homeWin} />
         {fin && (
-          <span className={`px-2 text-xs font-bold shrink-0 ${homeWin ? "text-white" : "text-slate-400"}`}>
-            {match.home_score}
-          </span>
+          <div className="flex items-center shrink-0">
+            <span className={`px-2 text-xs font-bold ${homeWin ? "text-white" : "text-slate-400"}`}>{match.home_score}</span>
+            {hasPenScore && (
+              <span className={`pr-2 text-xs font-bold border-l border-slate-600 pl-1.5 ${match.penalty_winner === 'home' ? "text-yellow-400" : "text-slate-500"}`}>
+                {match.penalty_home_score}
+              </span>
+            )}
+          </div>
         )}
       </div>
       <div className={`border-t border-slate-700 flex items-center justify-between ${awayWin ? "bg-slate-700" : ""}`}>
         <TeamRow team={match.away_r} isWinner={awayWin} />
         {fin && (
-          <span className={`px-2 text-xs font-bold shrink-0 ${awayWin ? "text-white" : "text-slate-400"}`}>
-            {match.away_score}
-          </span>
+          <div className="flex items-center shrink-0">
+            <span className={`px-2 text-xs font-bold ${awayWin ? "text-white" : "text-slate-400"}`}>{match.away_score}</span>
+            {hasPenScore && (
+              <span className={`pr-2 text-xs font-bold border-l border-slate-600 pl-1.5 ${match.penalty_winner === 'away' ? "text-yellow-400" : "text-slate-500"}`}>
+                {match.penalty_away_score}
+              </span>
+            )}
+          </div>
         )}
       </div>
+      {pen && !hasPenScore && (
+        <div className="border-t border-slate-700 px-2 py-0.5 text-[10px] text-yellow-500 font-medium text-center">pen.</div>
+      )}
       <div className="border-t border-slate-700 px-2 py-0.5 text-[10px] text-slate-500 text-center">
-        {pen && (
-          <span className="text-yellow-500 font-medium mr-1">
-            pen.{match.penalty_home_score != null && match.penalty_away_score != null ? ` ${match.penalty_home_score}–${match.penalty_away_score}` : ""}
-          </span>
-        )}
         J{match.jNum} · {fmtDate(match.match_date)}
       </div>
     </div>
