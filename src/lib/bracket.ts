@@ -284,6 +284,38 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
   }
   const isGroupDecided = (g: string) => (groupFinishedCount[g] ?? 0) >= 6;
 
+  // Pre-compute "Melhor 3º" slot assignments once across all knockout matches.
+  // Without this, each slot resolves independently and the same team can appear
+  // in multiple slots when their group is in several allowed sets.
+  const thirdsSlotAssignments = new Map<string, ResolvedTeam>();
+  if (Object.keys(groupMatchCount).every(g => isGroupDecided(g))) {
+    const thirdsRanked = thirdsOverride && thirdsOverride.length >= 8
+      ? thirdsOverride
+          .map(name => best3rds.find(s => s.team === name))
+          .filter((s): s is Standing => s !== undefined)
+      : best3rds.slice(0, 8);
+
+    // Collect all unique "Melhor 3º (XXXX)" placeholder strings from knockout matches
+    const koTeams = allMatches
+      .filter(m => m.stage !== "Grupos")
+      .flatMap(m => [m.home_team, m.away_team]);
+    const thirdSlots = [...new Set(koTeams.filter(t => /^Melhor 3º \([A-L]+\)$/.test(t)))];
+
+    // Greedy assignment: for each slot in occurrence order, assign the
+    // highest-ranked still-available third whose group is in the allowed set.
+    const usedGroups = new Set<string>();
+    for (const slot of thirdSlots) {
+      const am = slot.match(/\(([A-L]+)\)/);
+      if (!am) continue;
+      const allowed = new Set(am[1].split(""));
+      const team = thirdsRanked.find(s => allowed.has(s.group) && !usedGroups.has(s.group));
+      if (team) {
+        thirdsSlotAssignments.set(slot, { name: team.team, flag: team.flag });
+        usedGroups.add(team.group);
+      }
+    }
+  }
+
   // Helper: get the Standing for a group+rank, checking overrides first
   function getGroupTeam(g: string, rank: number): ResolvedTeam | null {
     if (overrides[g] && overrides[g][rank] !== undefined) {
@@ -311,22 +343,8 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
 
     m = placeholder.match(/^Melhor 3º \(([A-L]+)\)$/);
     if (m) {
-      const allowed = new Set(m[1].split(""));
-      // All 12 groups must be decided before we can know which 8 thirds qualify overall
-      const allGroupsDecided = Object.keys(groupMatchCount).every(g => isGroupDecided(g));
-      if (allGroupsDecided) {
-        if (thirdsOverride && thirdsOverride.length >= 8) {
-          // Use manual override: find the first overridden team whose group is in allowed
-          for (const teamName of thirdsOverride) {
-            const st = best3rds.find(s => s.team === teamName);
-            if (st && allowed.has(st.group)) return { name: st.team, flag: st.flag };
-          }
-        }
-        // Take the top 8 thirds overall, then find the one assigned to this slot
-        const top8 = best3rds.slice(0, 8);
-        const match = top8.find(s => allowed.has(s.group));
-        if (match) return { name: match.team, flag: match.flag };
-      }
+      const pre = thirdsSlotAssignments.get(placeholder);
+      if (pre) return pre;
       return { name: placeholder, flag: null };
     }
 
