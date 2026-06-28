@@ -219,6 +219,8 @@ function getWinner(m: Match): ResolvedTeam | null {
   if (!m.is_finished || m.home_score === null || m.away_score === null) return null;
   if (m.home_score > m.away_score) return { name: m.home_team, flag: m.home_flag };
   if (m.away_score > m.home_score) return { name: m.away_team, flag: m.away_flag };
+  if (m.penalty_winner === 'home') return { name: m.home_team, flag: m.home_flag };
+  if (m.penalty_winner === 'away') return { name: m.away_team, flag: m.away_flag };
   return null;
 }
 

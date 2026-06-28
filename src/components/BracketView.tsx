@@ -104,8 +104,9 @@ function MatchCard({ match, highlight }: { match: BracketMatch | null; highlight
   }
 
   const fin = match.is_finished && match.home_score !== null && match.away_score !== null;
-  const homeWin = fin && match.home_score! > match.away_score!;
-  const awayWin = fin && match.away_score! > match.home_score!;
+  const pen = fin && match.penalty_winner != null;
+  const homeWin = fin && (match.home_score! > match.away_score! || match.penalty_winner === 'home');
+  const awayWin = fin && (match.away_score! > match.home_score! || match.penalty_winner === 'away');
 
   return (
     <div className={`bg-slate-800 border ${border} rounded-lg overflow-hidden w-40`}>
@@ -126,6 +127,7 @@ function MatchCard({ match, highlight }: { match: BracketMatch | null; highlight
         )}
       </div>
       <div className="border-t border-slate-700 px-2 py-0.5 text-[10px] text-slate-500 text-center">
+        {pen && <span className="text-yellow-500 font-medium mr-1">pen.</span>}
         J{match.jNum} · {fmtDate(match.match_date)}
       </div>
     </div>

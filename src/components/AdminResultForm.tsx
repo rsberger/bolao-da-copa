@@ -12,22 +12,28 @@ export function AdminResultForm({ matches }: Props) {
   const [matchId, setMatchId] = useState(() => matches.filter((m) => !m.is_finished)[0]?.id ?? "");
   const [home, setHome] = useState("");
   const [away, setAway] = useState("");
+  const [penaltyWinner, setPenaltyWinner] = useState<"home" | "away" | "">("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const unfinished = matches.filter((m) => !m.is_finished);
-  // matchId must init from unfinished[0], not matches[0], to avoid submitting a finished match
-
   const selectedMatch = unfinished.find((m) => m.id === matchId);
+  const isKnockout = selectedMatch?.stage !== "Grupos";
+  const isDraw = home !== "" && away !== "" && parseInt(home) === parseInt(away);
+  const needsPenalty = isKnockout && isDraw;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedMatch) return;
+    const penLabel = needsPenalty && penaltyWinner
+      ? ` (pen. ${penaltyWinner === "home" ? selectedMatch.home_team : selectedMatch.away_team})`
+      : "";
     const confirmed = window.confirm(
-      `Confirmar resultado:\n${selectedMatch.home_team} ${home} × ${away} ${selectedMatch.away_team}`
+      `Confirmar resultado:\n${selectedMatch.home_team} ${home} × ${away} ${selectedMatch.away_team}${penLabel}`
     );
     if (!confirmed) return;
+    if (needsPenalty && !penaltyWinner) { setError("Selecione quem venceu nos pênaltis."); return; }
     setSaving(true);
     setError("");
     setSuccess("");
@@ -35,7 +41,7 @@ export function AdminResultForm({ matches }: Props) {
     const res = await fetch("/api/admin/result", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ matchId, homeScore: parseInt(home), awayScore: parseInt(away) }),
+      body: JSON.stringify({ matchId, homeScore: parseInt(home), awayScore: parseInt(away), penaltyWinner: needsPenalty ? penaltyWinner || null : null }),
     });
 
     const data = await res.json();
@@ -76,18 +82,34 @@ export function AdminResultForm({ matches }: Props) {
       <div className="flex items-center gap-3">
         <input
           required type="number" min={0} value={home}
-          onChange={(e) => setHome(e.target.value)}
+          onChange={(e) => { setHome(e.target.value); setPenaltyWinner(""); }}
           placeholder="0"
           className="w-16 text-center text-xl font-bold bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-green-500"
         />
         <span className="text-slate-400 font-bold text-xl">×</span>
         <input
           required type="number" min={0} value={away}
-          onChange={(e) => setAway(e.target.value)}
+          onChange={(e) => { setAway(e.target.value); setPenaltyWinner(""); }}
           placeholder="0"
           className="w-16 text-center text-xl font-bold bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-green-500"
         />
       </div>
+
+      {needsPenalty && selectedMatch && (
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-yellow-400 font-medium">Vencedor nos pênaltis</label>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setPenaltyWinner("home")}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${penaltyWinner === "home" ? "bg-green-600 border-green-500 text-white" : "bg-slate-700 border-slate-600 text-slate-300 hover:border-slate-400"}`}>
+              {selectedMatch.home_team}
+            </button>
+            <button type="button" onClick={() => setPenaltyWinner("away")}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${penaltyWinner === "away" ? "bg-green-600 border-green-500 text-white" : "bg-slate-700 border-slate-600 text-slate-300 hover:border-slate-400"}`}>
+              {selectedMatch.away_team}
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
       {success && <p className="text-green-400 text-sm">{success}</p>}
