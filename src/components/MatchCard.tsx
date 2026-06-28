@@ -110,11 +110,12 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
 
         <div className="text-center shrink-0">
           {resultLabel ? (
-            <div>
+            <div className="flex flex-col items-center gap-0.5">
               <div className="text-2xl font-bold text-white tabular-nums">{resultLabel}</div>
               {penaltyWinner && (
-                <div className="text-xs text-yellow-400 font-medium text-center mt-0.5">
-                  pen.{penScore ? ` ${penScore}` : ""}
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-500/10 border border-yellow-500/30 rounded text-xs font-bold tabular-nums">
+                  <span className="text-yellow-500 font-medium">pen.</span>
+                  {penScore && <span className="text-yellow-400">{penScore}</span>}
                 </div>
               )}
             </div>
