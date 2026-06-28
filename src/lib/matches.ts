@@ -10,7 +10,7 @@ export type Match = {
   home_score: number | null;
   away_score: number | null;
   is_finished: boolean;
-  penalty_winner: 'home' | 'away' | null;
+  penalty_winner?: 'home' | 'away' | null;
 };
 
 export type Prediction = {
