@@ -229,7 +229,20 @@ export default async function ResultadosPage() {
 
   // Best 8 thirds table
   const groupStandings = calcGroupStandings((matches ?? []) as Match[]);
-  const allThirds = calcBest3rds(groupStandings);
+  const computedThirds = calcBest3rds(groupStandings);
+  const { data: thirdsRow } = await supabase.from("thirds_override").select("ranking").eq("id", 1).maybeSingle();
+  const thirdsOverride: string[] | null = thirdsRow?.ranking ?? null;
+  const allThirds = thirdsOverride
+    ? [...computedThirds].sort((a, b) => {
+        const ai = thirdsOverride.indexOf(a.team);
+        const bi = thirdsOverride.indexOf(b.team);
+        // Overridden teams first (in override order), non-overridden after
+        if (ai === -1 && bi === -1) return 0;
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi;
+      })
+    : computedThirds;
   const groupMatchCount: Record<string, number> = {};
   const groupFinishedCount: Record<string, number> = {};
   for (const m of matches ?? []) {
