@@ -13,6 +13,8 @@ export function AdminResultForm({ matches }: Props) {
   const [home, setHome] = useState("");
   const [away, setAway] = useState("");
   const [penaltyWinner, setPenaltyWinner] = useState<"home" | "away" | "">("");
+  const [penHome, setPenHome] = useState("");
+  const [penAway, setPenAway] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -41,7 +43,7 @@ export function AdminResultForm({ matches }: Props) {
     const res = await fetch("/api/admin/result", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ matchId, homeScore: parseInt(home), awayScore: parseInt(away), penaltyWinner: needsPenalty ? penaltyWinner || null : null }),
+      body: JSON.stringify({ matchId, homeScore: parseInt(home), awayScore: parseInt(away), penaltyWinner: needsPenalty ? penaltyWinner || null : null, penaltyHomeScore: needsPenalty && penHome ? parseInt(penHome) : null, penaltyAwayScore: needsPenalty && penAway ? parseInt(penAway) : null }),
     });
 
     const data = await res.json();
@@ -96,7 +98,7 @@ export function AdminResultForm({ matches }: Props) {
       </div>
 
       {needsPenalty && selectedMatch && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
           <label className="text-xs text-yellow-400 font-medium">Vencedor nos pênaltis</label>
           <div className="flex gap-2">
             <button type="button" onClick={() => setPenaltyWinner("home")}
@@ -107,6 +109,14 @@ export function AdminResultForm({ matches }: Props) {
               className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${penaltyWinner === "away" ? "bg-green-600 border-green-500 text-white" : "bg-slate-700 border-slate-600 text-slate-300 hover:border-slate-400"}`}>
               {selectedMatch.away_team}
             </button>
+          </div>
+          <label className="text-xs text-slate-400">Placar dos pênaltis (opcional)</label>
+          <div className="flex items-center gap-3">
+            <input type="number" min={0} value={penHome} onChange={(e) => setPenHome(e.target.value)} placeholder="0"
+              className="w-16 text-center text-xl font-bold bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-500" />
+            <span className="text-slate-400 font-bold text-xl">×</span>
+            <input type="number" min={0} value={penAway} onChange={(e) => setPenAway(e.target.value)} placeholder="0"
+              className="w-16 text-center text-xl font-bold bg-slate-700 border border-slate-600 rounded-lg p-2 text-white focus:outline-none focus:border-yellow-500" />
           </div>
         </div>
       )}

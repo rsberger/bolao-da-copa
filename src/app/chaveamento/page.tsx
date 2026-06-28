@@ -14,7 +14,7 @@ export default async function ChaveamentoPage() {
 
   const { data } = await supabase
     .from("matches")
-    .select("id,home_team,away_team,home_flag,away_flag,match_date,stage,group_name,home_score,away_score,is_finished,penalty_winner")
+    .select("id,home_team,away_team,home_flag,away_flag,match_date,stage,group_name,home_score,away_score,is_finished,penalty_winner,penalty_home_score,penalty_away_score")
     .order("match_date", { ascending: true });
 
   const matches = (data ?? []) as Match[];

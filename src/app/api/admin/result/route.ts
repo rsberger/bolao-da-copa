@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).single();
   if (!profile?.is_admin) return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
 
-  const { matchId, homeScore, awayScore, penaltyWinner } = await req.json();
+  const { matchId, homeScore, awayScore, penaltyWinner, penaltyHomeScore, penaltyAwayScore } = await req.json();
   if (!matchId || homeScore == null || awayScore == null)
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
   const { error } = await admin
     .from("matches")
-    .update({ home_score: homeScore, away_score: awayScore, is_finished: true, penalty_winner: penaltyWinner ?? null })
+    .update({ home_score: homeScore, away_score: awayScore, is_finished: true, penalty_winner: penaltyWinner ?? null, penalty_home_score: penaltyHomeScore ?? null, penalty_away_score: penaltyAwayScore ?? null })
     .eq("id", matchId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

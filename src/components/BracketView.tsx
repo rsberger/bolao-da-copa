@@ -127,7 +127,11 @@ function MatchCard({ match, highlight }: { match: BracketMatch | null; highlight
         )}
       </div>
       <div className="border-t border-slate-700 px-2 py-0.5 text-[10px] text-slate-500 text-center">
-        {pen && <span className="text-yellow-500 font-medium mr-1">pen.</span>}
+        {pen && (
+          <span className="text-yellow-500 font-medium mr-1">
+            pen.{match.penalty_home_score != null && match.penalty_away_score != null ? ` ${match.penalty_home_score}–${match.penalty_away_score}` : ""}
+          </span>
+        )}
         J{match.jNum} · {fmtDate(match.match_date)}
       </div>
     </div>

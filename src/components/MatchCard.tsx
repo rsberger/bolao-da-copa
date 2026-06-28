@@ -76,6 +76,9 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
     ? `${match.home_score} × ${match.away_score}`
     : null;
   const penaltyWinner = match.is_finished ? match.penalty_winner : null;
+  const penScore = penaltyWinner && match.penalty_home_score != null && match.penalty_away_score != null
+    ? `${match.penalty_home_score} – ${match.penalty_away_score}`
+    : null;
 
   const pointsBadge = match.is_finished && prediction
     ? prediction.points > 0
@@ -110,7 +113,9 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
             <div>
               <div className="text-2xl font-bold text-white tabular-nums">{resultLabel}</div>
               {penaltyWinner && (
-                <div className="text-xs text-yellow-400 font-medium text-center mt-0.5">pen.</div>
+                <div className="text-xs text-yellow-400 font-medium text-center mt-0.5">
+                  pen.{penScore ? ` ${penScore}` : ""}
+                </div>
               )}
             </div>
           ) : (
