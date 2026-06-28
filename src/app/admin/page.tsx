@@ -6,9 +6,6 @@ import { redirect } from "next/navigation";
 import { AdminSyncButton } from "@/components/AdminSyncButton";
 import { AdminResultForm } from "@/components/AdminResultForm";
 import { AdminRoundResults } from "@/components/AdminRoundResults";
-import { AdminGroupOverrides } from "@/components/AdminGroupOverrides";
-import { AdminThirdsOverride } from "@/components/AdminThirdsOverride";
-import { calcGroupStandings, calcBest3rds } from "@/lib/bracket";
 import { getLocale } from "@/lib/i18n/server";
 import { translations } from "@/lib/i18n/translations";
 import { Calendar, Users } from "lucide-react";
@@ -50,15 +47,6 @@ export default async function AdminPage() {
     .from("matches")
     .select("*")
     .order("match_date", { ascending: true });
-
-  // Group overrides
-  const { data: overrideRows } = await createAdminClient().from("group_overrides").select("group_name, ranking");
-  const groupOverrides: Record<string, string[]> = {};
-  for (const row of overrideRows ?? []) groupOverrides[row.group_name] = row.ranking;
-  const groupStandings = calcGroupStandings((allMatches ?? []) as any);
-  const allThirds = calcBest3rds(groupStandings);
-  const { data: thirdsRow } = await createAdminClient().from("thirds_override").select("ranking").eq("id", 1).maybeSingle();
-  const thirdsOverride: string[] | null = thirdsRow?.ranking ?? null;
 
   // Data for AdminRoundResults dropdown
   const { data: finishedMatchesRaw } = await supabase
@@ -133,22 +121,6 @@ export default async function AdminPage() {
       <section className="bg-slate-800 rounded-xl p-6 space-y-4">
         <h2 className="text-lg font-semibold text-white">Resultados vs Palpites</h2>
         <AdminRoundResults matches={roundResultsRows} />
-      </section>
-
-      <section className="bg-slate-800 rounded-xl p-6 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-white">Classificação dos grupos</h2>
-          <p className="text-slate-400 text-sm mt-1">Override manual caso a FIFA publique uma classificação diferente do cálculo automático.</p>
-        </div>
-        <AdminGroupOverrides standings={groupStandings} overrides={groupOverrides} />
-      </section>
-
-      <section className="bg-slate-800 rounded-xl p-6 space-y-4">
-        <div>
-          <h2 className="text-lg font-semibold text-white">Melhores 3ºs — override manual</h2>
-          <p className="text-slate-400 text-sm mt-1">Override caso a FIFA publique uma classificação dos 3ºs colocados diferente do cálculo automático.</p>
-        </div>
-        <AdminThirdsOverride allThirds={allThirds} override={thirdsOverride} />
       </section>
 
       <section className="bg-slate-800 rounded-xl p-6 space-y-4">

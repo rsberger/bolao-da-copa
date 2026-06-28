@@ -95,7 +95,7 @@ function ResultDot({ r }: { r: Result }) {
   );
 }
 
-function GroupSection({ group, matches, t, locale }: { group: string; matches: Match[]; t: T; locale: string }) {
+function GroupSection({ group, matches, t, locale, qualifiedThirds }: { group: string; matches: Match[]; t: T; locale: string; qualifiedThirds: Set<string> }) {
   const standings = calcStandings(matches);
   const finished = matches.filter((m) => m.is_finished);
   const upcoming = matches.filter((m) => !m.is_finished);
@@ -127,15 +127,18 @@ function GroupSection({ group, matches, t, locale }: { group: string; matches: M
           <tbody>
             {standings.map((s, i) => {
               const last5 = lastResults(s.team, finished);
+              const isThirdQualified = i === 2 && qualifiedThirds.has(s.team);
+              const highlighted = i < 2 || isThirdQualified;
               return (
-              <tr key={s.team} className={`border-b border-slate-700/40 last:border-0 ${i < 2 ? "bg-green-500/5" : ""}`}>
+              <tr key={s.team} className={`border-b border-slate-700/40 last:border-0 ${i < 2 ? "bg-green-500/5" : isThirdQualified ? "bg-yellow-500/5" : ""}`}>
                 <td className="px-3 py-2.5 text-slate-500 text-xs">{i + 1}</td>
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     {flagUrl(s.flag)
                       ? <img src={flagUrl(s.flag)!} alt={s.team} className="w-6 h-4 object-cover rounded-sm shrink-0" />
                       : <span className="w-6 text-center text-xs">🏳️</span>}
-                    <span className={`font-medium truncate ${i < 2 ? "text-white" : "text-slate-300"}`}>{countryName(s.flag, locale) ?? s.team}</span>
+                    <span className={`font-medium truncate ${highlighted ? "text-white" : "text-slate-300"}`}>{countryName(s.flag, locale) ?? s.team}</span>
+                    {isThirdQualified && <span className="text-yellow-400 text-xs shrink-0">✓</span>}
                   </div>
                 </td>
                 <td className="px-2 py-2.5 text-center text-slate-400">{s.played}</td>
@@ -252,6 +255,7 @@ export default async function ResultadosPage() {
   }
   const groupsDone = Object.keys(groupMatchCount).filter(g => (groupFinishedCount[g] ?? 0) >= 6).length;
   const anyGroupStarted = allThirds.some(s => s.played > 0);
+  const qualifiedThirds = new Set(allThirds.slice(0, 8).map(s => s.team));
 
   return (
     <div className="space-y-6">
@@ -262,7 +266,7 @@ export default async function ResultadosPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {groups.map(([group, groupMatches]) => (
-          <GroupSection key={group} group={group} matches={groupMatches} t={t} locale={locale} />
+          <GroupSection key={group} group={group} matches={groupMatches} t={t} locale={locale} qualifiedThirds={qualifiedThirds} />
         ))}
       </div>
 
