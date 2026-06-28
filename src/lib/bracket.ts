@@ -248,12 +248,27 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
   // Mapping: FIFA game# → date-sort index among the 16 R32 matches.
   const R32_FIFA_TO_IDX: Record<number, number> = {
     73:0, 74:2, 75:3, 76:1, 77:5, 78:4, 79:6, 80:7,
-    81:9, 82:8, 83:10, 84:11, 85:12, 86:13, 87:14, 88:15,
+    81:9, 82:8, 83:11, 84:10, 85:12, 86:14, 87:15, 88:13,
   };
+  // R16: M90 is played earlier (07/04 14:00) than M89 (07/04 18:00)
+  // but FIFA bracket numbering puts M89 on top (left side, first).
+  const R16_FIFA_TO_IDX: Record<number, number> = {
+    89:1, 90:0, 91:2, 92:3, 93:4, 94:5, 95:6, 96:7,
+  };
+  // Unified map of ALL knockout round FIFA game# → Match, so that
+  // "Vencedor J89", "Vencedor J97", etc. placeholders resolve correctly.
+  const jMap = new Map<number, Match>([
+    ...Object.entries(R32_FIFA_TO_IDX).map(([k, v]) => [parseInt(k), r32raw[v]] as [number, Match]),
+    ...Object.entries(R16_FIFA_TO_IDX).map(([k, v]) => [parseInt(k), r16raw[v]] as [number, Match]),
+    ...qfraw.map((m, i) => [97 + i, m] as [number, Match]),
+    ...sfraw.map((m, i) => [101 + i, m] as [number, Match]),
+  ]);
   const r32map = new Map<number, Match>(
     Object.entries(R32_FIFA_TO_IDX).map(([fifa, idx]) => [parseInt(fifa), r32raw[idx]])
   );
-  const r16map = new Map(r16raw.map((m, i) => [89 + i, m]));
+  const r16map = new Map<number, Match>(
+    Object.entries(R16_FIFA_TO_IDX).map(([fifa, idx]) => [parseInt(fifa), r16raw[idx]])
+  );
   const qfmap  = new Map(qfraw.map((m, i)  => [97 + i, m]));
   const sfmap  = new Map(sfraw.map((m, i)  => [101 + i, m]));
 
@@ -317,7 +332,7 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
 
     m = placeholder.match(/^Vencedor J(\d+)$/);
     if (m) {
-      const match = r32map.get(parseInt(m[1]));
+      const match = jMap.get(parseInt(m[1]));
       if (!match) return { name: placeholder, flag: null };
       const w = getWinner(match);
       return w ?? { name: placeholder, flag: null };
@@ -384,8 +399,8 @@ export function buildBracket(allMatches: Match[], overrides: GroupOverrides = {}
 
   return {
     // FIFA game numbers by date-sort index
-    r32: r32raw.map((m, i) => enrich(m, [73,76,74,75,78,77,79,80,82,81,83,84,85,86,87,88][i] ?? (73+i))),
-    r16: r16raw.map((m, i) => enrich(m, 89 + i)),
+    r32: r32raw.map((m, i) => enrich(m, [73,76,74,75,78,77,79,80,82,81,84,83,85,88,86,87][i] ?? (73+i))),
+    r16: r16raw.map((m, i) => enrich(m, [90,89,91,92,93,94,95,96][i] ?? (89+i))),
     qf:  qfraw.map((m, i)  => enrich(m, 97 + i)),
     sf:  sfraw.map((m, i)  => enrich(m, 101 + i)),
     third: thirdraw ? enrich(thirdraw, 103) : null,
@@ -427,23 +442,25 @@ export function getBracketHalves(b: ReturnType<typeof buildBracket>): {
     left: {
       sf: g(sf, 0),
       qf: [g(qf, 0), g(qf, 1)],
-      r16: [g(r16, 0), g(r16, 1), g(r16, 4), g(r16, 5)],
+      // R16 visual order (top→bottom): M89(idx1), M90(idx0), M93(idx4), M94(idx5)
+      r16: [g(r16, 1), g(r16, 0), g(r16, 4), g(r16, 5)],
       r32: [
-        g(r32, 0), g(r32, 3), // J73, J75(FIFA) → R16-1
-        g(r32, 2), g(r32, 5), // J74(FIFA), J77(FIFA) → R16-2
-        g(r32, 10), g(r32, 11), // J83, J84 → R16-5
-        g(r32, 9), g(r32, 8), // J81(FIFA), J82(FIFA) → R16-6
+        g(r32, 2), g(r32, 5), // M74, M77 → M89
+        g(r32, 0), g(r32, 3), // M73, M75 → M90
+        g(r32, 11), g(r32, 10), // M83, M84 → M93
+        g(r32, 9), g(r32, 8), // M81, M82 → M94
       ],
     },
     right: {
       sf: g(sf, 1),
       qf: [g(qf, 2), g(qf, 3)],
+      // R16 visual order (top→bottom): M91(idx2), M92(idx3), M95(idx6), M96(idx7)
       r16: [g(r16, 2), g(r16, 3), g(r16, 6), g(r16, 7)],
       r32: [
-        g(r32, 1), g(r32, 4), // J76(FIFA), J78(FIFA) → R16-3
-        g(r32, 6), g(r32, 7), // J79, J80 → R16-4
-        g(r32, 13), g(r32, 15), // J86, J88 → R16-7
-        g(r32, 12), g(r32, 14), // J85, J87 → R16-8
+        g(r32, 1), g(r32, 4), // M76, M78 → M91
+        g(r32, 6), g(r32, 7), // M79, M80 → M92
+        g(r32, 14), g(r32, 13), // M86, M88 → M95
+        g(r32, 12), g(r32, 15), // M85, M87 → M96
       ],
     },
   };
