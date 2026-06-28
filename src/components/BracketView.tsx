@@ -137,9 +137,6 @@ function MatchCard({ match, highlight }: { match: BracketMatch | null; highlight
           </div>
         )}
       </div>
-      {pen && !hasPenScore && (
-        <div className="border-t border-slate-700 px-2 py-0.5 text-[10px] text-yellow-500 font-medium text-center">pen.</div>
-      )}
       <div className="border-t border-slate-700 px-2 py-0.5 text-[10px] text-slate-500 text-center">
         J{match.jNum} · {fmtDate(match.match_date)}
       </div>
