@@ -19,6 +19,7 @@ function MatchRow({ match, prediction: initialPrediction, userId }: { match: Mat
   const [prediction, setPrediction] = useState(initialPrediction);
   const [home, setHome] = useState(String(initialPrediction?.home_score ?? ""));
   const [away, setAway] = useState(String(initialPrediction?.away_score ?? ""));
+  const [penWinner, setPenWinner] = useState<'home' | 'away' | null>(initialPrediction?.predicted_penalty_winner ?? null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [locked, setLocked] = useState(() => parseMatchDate(match.match_date) <= new Date());
@@ -27,6 +28,7 @@ function MatchRow({ match, prediction: initialPrediction, userId }: { match: Mat
     setPrediction(initialPrediction);
     setHome(String(initialPrediction?.home_score ?? ""));
     setAway(String(initialPrediction?.away_score ?? ""));
+    setPenWinner(initialPrediction?.predicted_penalty_winner ?? null);
   }, [initialPrediction?.id, initialPrediction?.home_score, initialPrediction?.away_score]);
 
   useEffect(() => {
@@ -45,7 +47,7 @@ function MatchRow({ match, prediction: initialPrediction, userId }: { match: Mat
   async function save() {
     if (!userId || home === "" || away === "") return;
     setSaving(true);
-    const { predictionId, error } = await savePredictionAction(match.id, parseInt(home), parseInt(away));
+    const { predictionId, error } = await savePredictionAction(match.id, parseInt(home), parseInt(away), penWinner);
     if (!error && predictionId && !prediction) {
       setPrediction({ id: predictionId, user_id: userId, match_id: match.id, home_score: parseInt(home), away_score: parseInt(away), points: 0 });
     }
@@ -67,9 +69,12 @@ function MatchRow({ match, prediction: initialPrediction, userId }: { match: Mat
     ? (countryName(match.away_flag, locale) ?? match.away_team)
     : translateTeamName(match.away_team, t);
   const leftBorderColor = match.is_finished ? "border-l-green-600" : (hasPred || saved) ? "border-l-blue-500" : "border-l-pink-500";
+  const isKnockout = match.stage !== "Grupos";
+  const isDraw = home !== "" && away !== "" && parseInt(home) === parseInt(away);
+  const showPenPicker = canPredict && isKnockout && isDraw;
 
   return (
-    <div className={`flex items-center gap-2 bg-slate-800 rounded-lg px-3 py-2 border-l-4 ${leftBorderColor}`}>
+    <div className={`flex flex-col gap-1.5 bg-slate-800 rounded-lg px-3 py-2 border-l-4 ${leftBorderColor}`}><div className="flex items-center gap-2">
       {/* Home */}
       <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
         <span className="text-white text-xs font-medium truncate text-right hidden sm:block">{homeTeam}</span>
@@ -135,6 +140,19 @@ function MatchRow({ match, prediction: initialPrediction, userId }: { match: Mat
           </span>
         )}
       </div>
+    </div>
+    {showPenPicker && (
+      <div className="flex gap-2">
+        <button type="button" onClick={() => setPenWinner(penWinner === 'home' ? null : 'home')}
+          className={`flex-1 py-1 rounded text-xs font-semibold border transition-colors ${penWinner === 'home' ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-300" : "bg-slate-700 border-slate-600 text-slate-400 hover:border-slate-400"}`}>
+          {homeTeam} ↑
+        </button>
+        <button type="button" onClick={() => setPenWinner(penWinner === 'away' ? null : 'away')}
+          className={`flex-1 py-1 rounded text-xs font-semibold border transition-colors ${penWinner === 'away' ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-300" : "bg-slate-700 border-slate-600 text-slate-400 hover:border-slate-400"}`}>
+          {awayTeam} ↑
+        </button>
+      </div>
+    )}
     </div>
   );
 }
