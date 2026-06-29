@@ -20,7 +20,7 @@ type Leader = {
 };
 
 type RoundLeader = { id: string; name: string | null; avatar_url: string | null; points: number };
-type RoundMatchBreakdown = { matchId: string; label: string; predByUser: Record<string, { home: number; away: number; pts: number }> };
+type RoundMatchBreakdown = { matchId: string; label: string; homeFlag: string | null; awayFlag: string | null; predByUser: Record<string, { home: number; away: number; pts: number }> };
 type ChampionPick = { user_id: string; team: string; team_flag: string | null; name: string | null; avatar_url: string | null };
 
 type Props = {
@@ -476,7 +476,15 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
               <span className="flex-1" />
               <div className="flex gap-2 items-center">
                 {roundMatchBreakdown.map((m) => (
-                  <span key={m.matchId} className="text-slate-500 text-[10px] w-10 text-center truncate" title={m.label}>{m.label}</span>
+                  <div key={m.matchId} className="w-10 flex items-center justify-center gap-0.5" title={m.label}>
+                    {m.homeFlag
+                      ? <img src={`https://flagcdn.com/w20/${m.homeFlag.toLowerCase()}.png`} alt="" className="w-4 h-3 object-cover rounded-sm" />
+                      : <span className="text-slate-600 text-[10px]">?</span>}
+                    <span className="text-slate-600 text-[9px]">×</span>
+                    {m.awayFlag
+                      ? <img src={`https://flagcdn.com/w20/${m.awayFlag.toLowerCase()}.png`} alt="" className="w-4 h-3 object-cover rounded-sm" />
+                      : <span className="text-slate-600 text-[10px]">?</span>}
+                  </div>
                 ))}
                 <span className="text-slate-500 text-[10px] w-12 text-right">{t.roundRankingPts}</span>
               </div>

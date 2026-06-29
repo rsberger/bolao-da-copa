@@ -39,13 +39,13 @@ export default async function PlacarPage() {
 
   const { data: recentMatches } = dayStartUTC && dayEndUTC ? await supabase
     .from("matches")
-    .select("id, home_team, away_team")
+    .select("id, home_team, away_team, home_flag, away_flag")
     .eq("is_finished", true)
     .gte("match_date", dayStartUTC)
     .lt("match_date", dayEndUTC) : { data: [] };
 
   let roundLeaders: { id: string; name: string | null; avatar_url: string | null; points: number }[] = [];
-  let roundMatchBreakdown: { matchId: string; label: string; predByUser: Record<string, { home: number; away: number; pts: number }> }[] = [];
+  let roundMatchBreakdown: { matchId: string; label: string; homeFlag: string | null; awayFlag: string | null; predByUser: Record<string, { home: number; away: number; pts: number }> }[] = [];
   if (recentMatches && recentMatches.length > 0) {
     const { data: recentPreds } = await supabase
       .from("predictions")
@@ -65,6 +65,8 @@ export default async function PlacarPage() {
     roundMatchBreakdown = recentMatches.map((m) => ({
       matchId: m.id,
       label: `${m.home_team.split(" ")[0]} × ${m.away_team.split(" ")[0]}`,
+      homeFlag: m.home_flag ?? null,
+      awayFlag: m.away_flag ?? null,
       predByUser: perMatchMap.get(m.id) ?? {},
     }));
 
