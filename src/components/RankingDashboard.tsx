@@ -688,6 +688,15 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
           ))}
         </div>
 
+        {/* Penalty winner note */}
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 flex items-center gap-3">
+          <span className="text-yellow-400 font-bold text-lg shrink-0">2</span>
+          <div>
+            <div className="text-yellow-300 text-xs font-semibold">{t.scoringPenWinner}</div>
+            <div className="text-slate-500 text-xs">{t.scoringPenWinnerPts}</div>
+          </div>
+        </div>
+
         {/* Multipliers */}
         <div className="space-y-2">
           <p className="text-slate-400 text-xs uppercase tracking-wide font-medium">{t.scoringMultTitle}</p>
