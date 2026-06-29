@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 export async function savePredictionAction(
   matchId: string,
   homeScore: number,
-  awayScore: number
+  awayScore: number,
+  predictedPenaltyWinner?: 'home' | 'away' | null
 ): Promise<{ predictionId: string | null; error: string | null }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -17,6 +18,7 @@ export async function savePredictionAction(
     match_id: matchId,
     home_score: homeScore,
     away_score: awayScore,
+    predicted_penalty_winner: homeScore === awayScore ? (predictedPenaltyWinner ?? null) : null,
   };
 
   // Check if prediction already exists

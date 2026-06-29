@@ -22,6 +22,7 @@ export type Prediction = {
   home_score: number;
   away_score: number;
   points: number;
+  predicted_penalty_winner?: 'home' | 'away' | null;
 };
 
 export const STAGE_ORDER = [

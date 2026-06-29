@@ -19,11 +19,13 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
   const [prediction, setPrediction] = useState(initialPrediction);
   const [home, setHome] = useState(String(initialPrediction?.home_score ?? ""));
   const [away, setAway] = useState(String(initialPrediction?.away_score ?? ""));
+  const [penWinner, setPenWinner] = useState<'home' | 'away' | null>(initialPrediction?.predicted_penalty_winner ?? null);
 
   useEffect(() => {
     setPrediction(initialPrediction);
     setHome(String(initialPrediction?.home_score ?? ""));
     setAway(String(initialPrediction?.away_score ?? ""));
+    setPenWinner(initialPrediction?.predicted_penalty_winner ?? null);
   }, [initialPrediction?.id, initialPrediction?.home_score, initialPrediction?.away_score]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -46,7 +48,7 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
   async function savePrediction() {
     if (!userId || home === "" || away === "") return;
     setSaving(true);
-    const { predictionId, error } = await savePredictionAction(match.id, parseInt(home), parseInt(away));
+    const { predictionId, error } = await savePredictionAction(match.id, parseInt(home), parseInt(away), penWinner);
     if (!error && predictionId && !prediction) {
       setPrediction({ id: predictionId, user_id: userId, match_id: match.id, home_score: parseInt(home), away_score: parseInt(away), points: 0 });
     }
@@ -164,6 +166,25 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
               className="w-14 text-center text-lg font-bold rounded-lg p-2 bg-slate-700 text-white border border-slate-600 focus:outline-none focus:border-green-500 disabled:opacity-50"
             />
           </div>
+
+          {(() => {
+            const isKnockout = match.stage !== "Grupos";
+            const isDraw = home !== "" && away !== "" && parseInt(home) === parseInt(away);
+            const showPenPicker = isKnockout && isDraw;
+            if (!showPenPicker) return null;
+            return (
+              <div className="mt-2 flex gap-2">
+                <button type="button" onClick={() => setPenWinner(penWinner === 'home' ? null : 'home')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${penWinner === 'home' ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-300" : "bg-slate-700 border-slate-600 text-slate-400 hover:border-slate-400"}`}>
+                  {homeTeam} ↑
+                </button>
+                <button type="button" onClick={() => setPenWinner(penWinner === 'away' ? null : 'away')}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${penWinner === 'away' ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-300" : "bg-slate-700 border-slate-600 text-slate-400 hover:border-slate-400"}`}>
+                  {awayTeam} ↑
+                </button>
+              </div>
+            );
+          })()}
 
           {canPredict && (
             <button
