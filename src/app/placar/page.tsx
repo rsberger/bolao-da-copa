@@ -45,19 +45,28 @@ export default async function PlacarPage() {
     .lt("match_date", dayEndUTC) : { data: [] };
 
   let roundLeaders: { id: string; name: string | null; avatar_url: string | null; points: number }[] = [];
+  let roundMatchBreakdown: { matchId: string; label: string; pointsByUser: Record<string, number> }[] = [];
   if (recentMatches && recentMatches.length > 0) {
     const { data: recentPreds } = await supabase
       .from("predictions")
-      .select("user_id, points")
+      .select("user_id, match_id, points")
       .in("match_id", recentMatches.map((m) => m.id));
 
     const pointsMap = new Map<string, number>();
+    const perMatchMap = new Map<string, Record<string, number>>();
+    for (const m of recentMatches) perMatchMap.set(m.id, {});
     for (const p of recentPreds ?? []) {
       pointsMap.set(p.user_id, (pointsMap.get(p.user_id) ?? 0) + (p.points ?? 0));
+      if (perMatchMap.has(p.match_id)) perMatchMap.get(p.match_id)![p.user_id] = p.points ?? 0;
     }
 
+    roundMatchBreakdown = recentMatches.map((m) => ({
+      matchId: m.id,
+      label: `${m.home_team.split(" ")[0]} × ${m.away_team.split(" ")[0]}`,
+      pointsByUser: perMatchMap.get(m.id) ?? {},
+    }));
+
     roundLeaders = (leaders ?? [])
-      .filter((l) => pointsMap.has(l.id))
       .map((l) => ({ id: l.id, name: l.name, avatar_url: l.avatar_url, points: pointsMap.get(l.id) ?? 0 }))
       .sort((a, b) => b.points - a.points);
   }
@@ -173,6 +182,7 @@ export default async function PlacarPage() {
       currentUserId={user?.id ?? null}
       roundLeaders={roundLeaders}
       roundMatchCount={recentMatches?.length ?? 0}
+      roundMatchBreakdown={roundMatchBreakdown}
       championPicks={championPicks}
       myChampionPick={myChampionPick}
       missingMatchCount={missingMatchCount}

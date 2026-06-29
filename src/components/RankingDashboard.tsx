@@ -20,6 +20,7 @@ type Leader = {
 };
 
 type RoundLeader = { id: string; name: string | null; avatar_url: string | null; points: number };
+type RoundMatchBreakdown = { matchId: string; label: string; pointsByUser: Record<string, number> };
 type ChampionPick = { user_id: string; team: string; team_flag: string | null; name: string | null; avatar_url: string | null };
 
 type Props = {
@@ -27,6 +28,7 @@ type Props = {
   currentUserId: string | null;
   roundLeaders: RoundLeader[];
   roundMatchCount: number;
+  roundMatchBreakdown?: RoundMatchBreakdown[];
   championPicks: ChampionPick[];
   myChampionPick: { team: string; team_flag: string | null } | null;
   missingMatchCount: number;
@@ -271,7 +273,7 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
   );
 }
 
-export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, championPicks, myChampionPick, missingMatchCount, missingChampion, finishedPredsById, geloUserIds, zebraCountById }: Props) {
+export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, roundMatchBreakdown, championPicks, myChampionPick, missingMatchCount, missingChampion, finishedPredsById, geloUserIds, zebraCountById }: Props) {
   const t = useT();
   const locale = useLocale();
   const getBadges = useBadges(leaders, roundLeaders, finishedPredsById, geloUserIds, zebraCountById);
@@ -466,12 +468,26 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
             <h2 className="text-white font-semibold text-sm">{t.roundRankingTitle}</h2>
             <span className="text-slate-500 text-xs">{t.roundRankingDesc(roundMatchCount)}</span>
           </div>
-          {roundLeaders.slice(0, 5).map((player, i) => {
+          {/* Per-match header if breakdown available */}
+          {roundMatchBreakdown && roundMatchBreakdown.length > 0 && (
+            <div className="flex items-center gap-3 px-4 py-1.5 border-b border-slate-700/60">
+              <span className="w-5 shrink-0" />
+              <span className="w-7 shrink-0" />
+              <span className="flex-1" />
+              <div className="flex gap-2 items-center">
+                {roundMatchBreakdown.map((m) => (
+                  <span key={m.matchId} className="text-slate-500 text-[10px] w-10 text-center truncate" title={m.label}>{m.label}</span>
+                ))}
+                <span className="text-slate-500 text-[10px] w-12 text-right">{t.roundRankingPts}</span>
+              </div>
+            </div>
+          )}
+          {roundLeaders.map((player, i) => {
             const isMe = player.id === currentUserId;
             const initials = (player.name ?? "?")[0].toUpperCase();
             return (
               <div key={player.id} className={`flex items-center gap-3 px-4 py-2.5 border-b border-slate-700/40 last:border-0 ${isMe ? "bg-green-500/10" : ""}`}>
-                <span className={`text-sm font-bold w-5 text-center ${i === 0 ? "text-yellow-400" : "text-slate-600"}`}>{i + 1}</span>
+                <span className={`text-sm font-bold w-5 text-center shrink-0 ${i === 0 ? "text-yellow-400" : "text-slate-600"}`}>{i + 1}</span>
                 <div className="w-7 h-7 rounded-full overflow-hidden bg-slate-600 flex items-center justify-center shrink-0">
                   {player.avatar_url
                     ? <img src={player.avatar_url} alt={player.name ?? ""} className="w-full h-full object-cover" />
@@ -480,9 +496,19 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
                 <span className={`flex-1 text-sm font-medium ${isMe ? "text-green-300" : "text-slate-300"}`}>
                   {(player.name ?? "?").split(" ")[0]}{isMe ? ` ${t.youIndicator}` : ""}
                 </span>
-                <span className={`font-bold text-sm ${i === 0 ? "text-yellow-400" : "text-white"}`}>
-                  +{player.points} <span className="text-slate-500 font-normal text-xs">{t.roundRankingPts}</span>
-                </span>
+                <div className="flex gap-2 items-center">
+                  {roundMatchBreakdown && roundMatchBreakdown.map((m) => {
+                    const pts = m.pointsByUser[player.id];
+                    return (
+                      <span key={m.matchId} className={`text-xs w-10 text-center tabular-nums ${pts == null ? "text-slate-600" : pts > 0 ? "text-green-400 font-semibold" : "text-slate-500"}`}>
+                        {pts == null ? "—" : pts > 0 ? `+${pts}` : "0"}
+                      </span>
+                    );
+                  })}
+                  <span className={`font-bold text-sm w-12 text-right tabular-nums ${i === 0 ? "text-yellow-400" : "text-white"}`}>
+                    +{player.points}
+                  </span>
+                </div>
               </div>
             );
           })}
