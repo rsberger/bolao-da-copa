@@ -20,7 +20,7 @@ type Leader = {
 };
 
 type RoundLeader = { id: string; name: string | null; avatar_url: string | null; points: number };
-type RoundMatchBreakdown = { matchId: string; label: string; pointsByUser: Record<string, number> };
+type RoundMatchBreakdown = { matchId: string; label: string; predByUser: Record<string, { home: number; away: number; pts: number }> };
 type ChampionPick = { user_id: string; team: string; team_flag: string | null; name: string | null; avatar_url: string | null };
 
 type Props = {
@@ -498,10 +498,11 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
                 </span>
                 <div className="flex gap-2 items-center">
                   {roundMatchBreakdown && roundMatchBreakdown.map((m) => {
-                    const pts = m.pointsByUser[player.id];
+                    const pred = m.predByUser[player.id];
+                    const color = pred == null ? "text-slate-600" : pred.pts > 0 ? "text-green-400" : "text-slate-400";
                     return (
-                      <span key={m.matchId} className={`text-xs w-10 text-center tabular-nums ${pts == null ? "text-slate-600" : pts > 0 ? "text-green-400 font-semibold" : "text-slate-500"}`}>
-                        {pts == null ? "—" : pts > 0 ? `+${pts}` : "0"}
+                      <span key={m.matchId} className={`text-xs w-10 text-center tabular-nums ${color}`}>
+                        {pred == null ? "—" : `${pred.home}-${pred.away}`}
                       </span>
                     );
                   })}
