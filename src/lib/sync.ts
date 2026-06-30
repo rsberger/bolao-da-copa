@@ -66,8 +66,16 @@ export async function syncResults(): Promise<SyncResult> {
   for (const apiMatch of finishedMatches) {
     const homeTeam = TEAM_MAP[apiMatch.homeTeam.name] ?? apiMatch.homeTeam.name;
     const awayTeam = TEAM_MAP[apiMatch.awayTeam.name] ?? apiMatch.awayTeam.name;
-    const homeScore = apiMatch.score.fullTime.home;
-    const awayScore = apiMatch.score.fullTime.away;
+    // For penalty shootout matches, prefer regularTime score over fullTime
+    // (some API responses put the penalty tally in fullTime)
+    const isPenaltyMatch = apiMatch.score.duration === "PENALTY_SHOOTOUT";
+    const regularTime = apiMatch.score.regularTime ?? apiMatch.score.extraTime ?? null;
+    const homeScore = isPenaltyMatch && regularTime?.home != null
+      ? regularTime.home
+      : apiMatch.score.fullTime.home;
+    const awayScore = isPenaltyMatch && regularTime?.away != null
+      ? regularTime.away
+      : apiMatch.score.fullTime.away;
 
     if (homeScore === null || awayScore === null) continue;
 
