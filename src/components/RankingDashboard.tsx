@@ -476,7 +476,7 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
               <span className="flex-1" />
               <div className="flex gap-2 items-center">
                 {roundMatchBreakdown.map((m) => (
-                  <div key={m.matchId} className="w-10 flex items-center justify-center gap-0.5" title={m.label}>
+                  <div key={m.matchId} className="w-16 flex items-center justify-center gap-0.5" title={m.label}>
                     {m.homeFlag
                       ? <img src={`https://flagcdn.com/w20/${m.homeFlag.toLowerCase()}.png`} alt="" className="w-4 h-3 object-cover rounded-sm" />
                       : <span className="text-slate-600 text-[10px]">?</span>}
@@ -486,7 +486,7 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
                       : <span className="text-slate-600 text-[10px]">?</span>}
                   </div>
                 ))}
-                <span className="text-slate-500 text-[10px] w-12 text-right">{t.roundRankingPts}</span>
+                <span className="text-slate-500 text-[10px] w-14 text-right">{t.roundRankingPts}</span>
               </div>
             </div>
           )}
@@ -509,12 +509,12 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
                     const pred = m.predByUser[player.id];
                     const color = pred == null ? "text-slate-600" : pred.pts > 0 ? "text-green-400" : "text-slate-400";
                     return (
-                      <span key={m.matchId} className={`text-xs w-10 text-center tabular-nums ${color}`}>
+                      <span key={m.matchId} className={`text-xs w-16 text-center tabular-nums ${color}`}>
                         {pred == null ? "—" : `${pred.home}-${pred.away}`}
                       </span>
                     );
                   })}
-                  <span className={`font-bold text-sm w-12 text-right tabular-nums ${i === 0 ? "text-yellow-400" : "text-white"}`}>
+                  <span className={`font-bold text-sm w-14 text-right tabular-nums ${i === 0 ? "text-yellow-400" : "text-white"}`}>
                     +{player.points}
                   </span>
                 </div>

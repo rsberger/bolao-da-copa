@@ -37,12 +37,14 @@ export default async function PlacarPage() {
     ? new Date(new Date(`${brazilDay}T03:00:00+00:00`).getTime() + 24 * 60 * 60 * 1000).toISOString()
     : null;
 
-  const { data: recentMatches } = dayStartUTC && dayEndUTC ? await supabase
+  const { data: recentMatchesRaw } = dayStartUTC && dayEndUTC ? await supabase
     .from("matches")
-    .select("id, home_team, away_team, home_flag, away_flag")
+    .select("id, home_team, away_team, home_flag, away_flag, match_date")
     .eq("is_finished", true)
     .gte("match_date", dayStartUTC)
-    .lt("match_date", dayEndUTC) : { data: [] };
+    .lt("match_date", dayEndUTC)
+    .order("match_date", { ascending: true }) : { data: [] };
+  const recentMatches = recentMatchesRaw ?? [];
 
   let roundLeaders: { id: string; name: string | null; avatar_url: string | null; points: number }[] = [];
   let roundMatchBreakdown: { matchId: string; label: string; homeFlag: string | null; awayFlag: string | null; predByUser: Record<string, { home: number; away: number; pts: number }> }[] = [];
@@ -185,7 +187,7 @@ export default async function PlacarPage() {
       leaders={leaders ?? []}
       currentUserId={user?.id ?? null}
       roundLeaders={roundLeaders}
-      roundMatchCount={recentMatches?.length ?? 0}
+      roundMatchCount={recentMatches.length}
       roundMatchBreakdown={roundMatchBreakdown}
       championPicks={championPicks}
       myChampionPick={myChampionPick}

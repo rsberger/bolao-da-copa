@@ -74,7 +74,7 @@ export function MatchCard({ match, prediction: initialPrediction, userId }: Prop
     ? (countryName(match.away_flag, locale) ?? match.away_team)
     : translateTeamName(match.away_team, t);
 
-  const resultLabel = match.is_finished
+  const resultLabel = match.is_finished && match.home_score != null && match.away_score != null
     ? `${match.home_score} × ${match.away_score}`
     : null;
   const penaltyWinner = match.is_finished ? match.penalty_winner : null;
