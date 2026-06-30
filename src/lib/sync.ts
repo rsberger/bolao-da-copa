@@ -47,7 +47,7 @@ export async function syncResults(): Promise<SyncResult> {
   // Fetch ALL matches so buildResolver can compute group standings + bracket state
   const { data: allDbMatches } = await supabase
     .from("matches")
-    .select("id, home_team, away_team, home_flag, away_flag, home_score, away_score, is_finished, stage, group_name, match_date");
+    .select("id, home_team, away_team, home_flag, away_flag, home_score, away_score, is_finished, stage, group_name, match_date, penalty_winner");
 
   const resolve = buildResolver(allDbMatches ?? []);
 
@@ -59,6 +59,7 @@ export async function syncResults(): Promise<SyncResult> {
     is_finished: m.is_finished,
     home_score: m.home_score,
     away_score: m.away_score,
+    penalty_winner: m.penalty_winner,
   }));
 
   let updated = 0;
@@ -104,7 +105,7 @@ export async function syncResults(): Promise<SyncResult> {
       penaltyAwayScore = swapped ? ph : pa;
     }
 
-    if (dbMatch.is_finished && dbMatch.home_score === dbHomeScore && dbMatch.away_score === dbAwayScore) continue;
+    if (dbMatch.is_finished && dbMatch.home_score === dbHomeScore && dbMatch.away_score === dbAwayScore && dbMatch.penalty_winner === penaltyWinner) continue;
 
     await supabase
       .from("matches")
