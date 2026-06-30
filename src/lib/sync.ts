@@ -105,11 +105,22 @@ export async function syncResults(): Promise<SyncResult> {
       penaltyAwayScore = swapped ? ph : pa;
     }
 
-    if (dbMatch.is_finished && dbMatch.home_score === dbHomeScore && dbMatch.away_score === dbAwayScore && dbMatch.penalty_winner === penaltyWinner) continue;
+    // If API has no penalty data but DB already has it, preserve the DB penalty data
+    const keepExistingPenalty = penaltyWinner === null && dbMatch.penalty_winner != null;
+    const effectivePenaltyWinner = keepExistingPenalty ? dbMatch.penalty_winner : penaltyWinner;
+
+    if (dbMatch.is_finished && dbMatch.home_score === dbHomeScore && dbMatch.away_score === dbAwayScore && dbMatch.penalty_winner === effectivePenaltyWinner) continue;
+
+    const updatePayload: Record<string, unknown> = { home_score: dbHomeScore, away_score: dbAwayScore, is_finished: true };
+    if (!keepExistingPenalty) {
+      updatePayload.penalty_winner = penaltyWinner;
+      updatePayload.penalty_home_score = penaltyHomeScore;
+      updatePayload.penalty_away_score = penaltyAwayScore;
+    }
 
     await supabase
       .from("matches")
-      .update({ home_score: dbHomeScore, away_score: dbAwayScore, is_finished: true, penalty_winner: penaltyWinner, penalty_home_score: penaltyHomeScore, penalty_away_score: penaltyAwayScore })
+      .update(updatePayload)
       .eq("id", dbMatch.id);
 
     await supabase.rpc("calculate_match_points", { p_match_id: dbMatch.id });
