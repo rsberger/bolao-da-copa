@@ -20,7 +20,11 @@ type Leader = {
 };
 
 type RoundLeader = { id: string; name: string | null; avatar_url: string | null; points: number };
-type RoundMatchBreakdown = { matchId: string; label: string; homeFlag: string | null; awayFlag: string | null; predByUser: Record<string, { home: number; away: number; pts: number }> };
+type RoundMatchBreakdown = {
+  matchId: string; label: string; homeFlag: string | null; awayFlag: string | null;
+  homeScore: number | null; awayScore: number | null; penaltyWinner: 'home' | 'away' | null;
+  predByUser: Record<string, { home: number; away: number; pts: number }>;
+};
 type ChampionPick = { user_id: string; team: string; team_flag: string | null; name: string | null; avatar_url: string | null };
 
 type Props = {
@@ -475,17 +479,33 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
               <span className="w-7 shrink-0" />
               <span className="flex-1" />
               <div className="flex gap-2 items-center">
-                {roundMatchBreakdown.map((m) => (
-                  <div key={m.matchId} className="w-16 flex items-center justify-center gap-0.5" title={m.label}>
-                    {m.homeFlag
-                      ? <img src={`https://flagcdn.com/w20/${m.homeFlag.toLowerCase()}.png`} alt="" className="w-4 h-3 object-cover rounded-sm" />
-                      : <span className="text-slate-600 text-[10px]">?</span>}
-                    <span className="text-slate-600 text-[9px]">×</span>
-                    {m.awayFlag
-                      ? <img src={`https://flagcdn.com/w20/${m.awayFlag.toLowerCase()}.png`} alt="" className="w-4 h-3 object-cover rounded-sm" />
-                      : <span className="text-slate-600 text-[10px]">?</span>}
-                  </div>
-                ))}
+                {roundMatchBreakdown.map((m) => {
+                  const isDraw = m.homeScore != null && m.awayScore != null && m.homeScore === m.awayScore;
+                  const winnerFlag = isDraw
+                    ? (m.penaltyWinner === 'home' ? m.homeFlag : m.penaltyWinner === 'away' ? m.awayFlag : null)
+                    : null;
+                  return (
+                    <div key={m.matchId} className="w-16 flex flex-col items-center gap-0.5" title={m.label}>
+                      <div className="flex items-center gap-0.5">
+                        {m.homeFlag
+                          ? <img src={`https://flagcdn.com/w20/${m.homeFlag.toLowerCase()}.png`} alt="" className="w-4 h-3 object-cover rounded-sm" />
+                          : <span className="text-slate-600 text-[10px]">?</span>}
+                        <span className="text-slate-600 text-[9px]">×</span>
+                        {m.awayFlag
+                          ? <img src={`https://flagcdn.com/w20/${m.awayFlag.toLowerCase()}.png`} alt="" className="w-4 h-3 object-cover rounded-sm" />
+                          : <span className="text-slate-600 text-[10px]">?</span>}
+                      </div>
+                      {m.homeScore != null && m.awayScore != null && (
+                        <span className="text-slate-400 text-[10px] font-semibold tabular-nums">
+                          {m.homeScore}-{m.awayScore}
+                        </span>
+                      )}
+                      {isDraw && winnerFlag && (
+                        <img src={`https://flagcdn.com/w20/${winnerFlag.toLowerCase()}.png`} alt="" title="Pen." className="w-3.5 h-2.5 object-cover rounded-sm border border-yellow-500/50" />
+                      )}
+                    </div>
+                  );
+                })}
                 <span className="text-slate-500 text-[10px] w-14 text-right">{t.roundRankingPts}</span>
               </div>
             </div>

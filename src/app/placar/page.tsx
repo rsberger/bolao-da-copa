@@ -19,14 +19,18 @@ export default async function PlacarPage() {
   // Round ranking: last 3 finished matches
   const { data: recentMatchesRaw } = await supabase
     .from("matches")
-    .select("id, home_team, away_team, home_flag, away_flag, match_date")
+    .select("id, home_team, away_team, home_flag, away_flag, match_date, home_score, away_score, penalty_winner")
     .eq("is_finished", true)
     .order("match_date", { ascending: false })
     .limit(3);
   const recentMatches = (recentMatchesRaw ?? []).reverse(); // oldest first = left to right
 
   let roundLeaders: { id: string; name: string | null; avatar_url: string | null; points: number }[] = [];
-  let roundMatchBreakdown: { matchId: string; label: string; homeFlag: string | null; awayFlag: string | null; predByUser: Record<string, { home: number; away: number; pts: number }> }[] = [];
+  let roundMatchBreakdown: {
+    matchId: string; label: string; homeFlag: string | null; awayFlag: string | null;
+    homeScore: number | null; awayScore: number | null; penaltyWinner: 'home' | 'away' | null;
+    predByUser: Record<string, { home: number; away: number; pts: number }>;
+  }[] = [];
   if (recentMatches && recentMatches.length > 0) {
     const { data: recentPreds } = await supabase
       .from("predictions")
@@ -48,6 +52,9 @@ export default async function PlacarPage() {
       label: `${m.home_team.split(" ")[0]} × ${m.away_team.split(" ")[0]}`,
       homeFlag: m.home_flag ?? null,
       awayFlag: m.away_flag ?? null,
+      homeScore: m.home_score,
+      awayScore: m.away_score,
+      penaltyWinner: m.penalty_winner,
       predByUser: perMatchMap.get(m.id) ?? {},
     }));
 
