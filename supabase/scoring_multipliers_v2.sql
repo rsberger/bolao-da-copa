@@ -30,8 +30,8 @@ begin
 
   v_mult := case
     when v_stage ilike 'Final'        then 6
-    when v_stage ilike 'Terceiro%'    then 6
     when v_stage ilike 'Semi%'        then 5
+    when v_stage ilike 'Terceiro%'    then 5
     when v_stage ilike 'Quartas%'     then 4
     when v_stage ilike 'Oitavas%'     then 3
     when v_stage ilike 'Trinta%'      then 2

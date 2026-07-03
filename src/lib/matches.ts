@@ -44,7 +44,7 @@ export const STAGE_MULT: Record<string, number> = {
   "Oitavas":       3,
   "Quartas":       4,
   "Semi":          5,
-  "Terceiro":      6,
+  "Terceiro":      5,
   "Final":         6,
 };
 

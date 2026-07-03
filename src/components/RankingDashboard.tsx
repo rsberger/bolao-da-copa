@@ -763,7 +763,7 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
               { label: t.scoringMultQuartas, mult: 4, exact: 20, diff: 12, winner: 8  },
               { label: t.scoringMultOitavas, mult: 3, exact: 15, diff: 9,  winner: 6  },
               { label: t.scoringMultR32,     mult: 2, exact: 10, diff: 6,  winner: 4  },
-              { label: t.scoringMultGrupos,  mult: 1, exact: 5,  diff: 3,  winner: 2  },
+              { label: t.scoringMultGrupos,  mult: 1, exact: 5,  diff: 3,  winner: 2 },
             ].map(({ label, mult, exact, diff, winner }) => (
               <div key={label} className="bg-slate-700/40 border border-slate-700 rounded-xl p-3 flex items-start justify-between gap-2">
                 <div>
