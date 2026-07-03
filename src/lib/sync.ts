@@ -91,7 +91,11 @@ export async function syncResults(): Promise<SyncResult> {
     const dbHomeScore = swapped ? awayScore : homeScore;
     const dbAwayScore = swapped ? homeScore : awayScore;
 
-    // Penalty winner + shootout score
+    // Penalty winner + shootout score.
+    // Only trust the API's penalty data once it has actually resolved a winner —
+    // some responses report duration: PENALTY_SHOOTOUT with penalties 0-0 and
+    // winner: null before the shootout is finalized, which must not overwrite
+    // real data (manual or previously synced).
     let penaltyWinner: 'home' | 'away' | null = null;
     let penaltyHomeScore: number | null = null;
     let penaltyAwayScore: number | null = null;
@@ -99,10 +103,13 @@ export async function syncResults(): Promise<SyncResult> {
       const apiWinner = apiMatch.score.winner;
       if (apiWinner === "HOME_TEAM") penaltyWinner = swapped ? 'away' : 'home';
       else if (apiWinner === "AWAY_TEAM") penaltyWinner = swapped ? 'home' : 'away';
-      const ph = apiMatch.score.penalties?.home ?? null;
-      const pa = apiMatch.score.penalties?.away ?? null;
-      penaltyHomeScore = swapped ? pa : ph;
-      penaltyAwayScore = swapped ? ph : pa;
+
+      if (penaltyWinner !== null) {
+        const ph = apiMatch.score.penalties?.home ?? null;
+        const pa = apiMatch.score.penalties?.away ?? null;
+        penaltyHomeScore = swapped ? pa : ph;
+        penaltyAwayScore = swapped ? ph : pa;
+      }
     }
 
     // If API has no penalty data but DB already has it, preserve the DB penalty data
