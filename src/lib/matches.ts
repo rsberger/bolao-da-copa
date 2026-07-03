@@ -41,11 +41,11 @@ export const STAGE_LABELS: Record<string, string> = {
 export const STAGE_MULT: Record<string, number> = {
   "Grupos":        1,
   "Trinta e dois": 2,
-  "Oitavas":       2,
-  "Quartas":       3,
-  "Semi":          4,
-  "Terceiro":      4,
-  "Final":         5,
+  "Oitavas":       3,
+  "Quartas":       4,
+  "Semi":          5,
+  "Terceiro":      6,
+  "Final":         6,
 };
 
 export function groupMatchesByStage(matches: Match[]): Record<string, Match[]> {
