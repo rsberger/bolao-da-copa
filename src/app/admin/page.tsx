@@ -9,6 +9,7 @@ import { AdminRoundResults } from "@/components/AdminRoundResults";
 import { getLocale } from "@/lib/i18n/server";
 import { translations } from "@/lib/i18n/translations";
 import { Calendar, Users } from "lucide-react";
+import { buildResolver } from "@/lib/bracket";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -43,10 +44,17 @@ export default async function AdminPage() {
     .limit(1)
     .single();
 
-  const { data: allMatches } = await supabase
+  const { data: allMatchesRaw } = await supabase
     .from("matches")
     .select("*")
     .order("match_date", { ascending: true });
+
+  const resolve = buildResolver(allMatchesRaw ?? []);
+  const allMatches = (allMatchesRaw ?? []).map((m) => ({
+    ...m,
+    home_team: resolve(m.home_team).name,
+    away_team: resolve(m.away_team).name,
+  }));
 
   // Data for AdminRoundResults dropdown
   const { data: finishedMatchesRaw } = await supabase
