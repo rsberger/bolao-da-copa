@@ -215,21 +215,30 @@ export function calcBest3rds(standings: GroupStandings): Standing[] {
   return thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || fifaRank(a.team) - fifaRank(b.team));
 }
 
-function getWinner(m: Match): ResolvedTeam | null {
+// `resolveFn` recursively resolves the match's own home/away team names —
+// necessary because m.home_team/away_team may themselves still be an
+// unresolved placeholder (e.g. "Vencedor J75") when this match's winner
+// feeds directly into a later round's placeholder.
+function getWinner(m: Match, resolveFn: (s: string) => ResolvedTeam): ResolvedTeam | null {
   if (!m.is_finished || m.home_score === null || m.away_score === null) return null;
-  if (m.home_score > m.away_score) return { name: m.home_team, flag: m.home_flag };
-  if (m.away_score > m.home_score) return { name: m.away_team, flag: m.away_flag };
-  if (m.penalty_winner === 'home') return { name: m.home_team, flag: m.home_flag };
-  if (m.penalty_winner === 'away') return { name: m.away_team, flag: m.away_flag };
+  if (m.home_score > m.away_score) return resolveFn(m.home_team);
+  if (m.away_score > m.home_score) return resolveFn(m.away_team);
+  if (m.penalty_winner === 'home') return resolveFn(m.home_team);
+  if (m.penalty_winner === 'away') return resolveFn(m.away_team);
   return null;
 }
 
-function getLoser(m: Match): ResolvedTeam | null {
-  const w = getWinner(m);
-  if (!w) return null;
-  return w.name === m.home_team
-    ? { name: m.away_team, flag: m.away_flag }
-    : { name: m.home_team, flag: m.home_flag };
+function getLoser(m: Match, resolveFn: (s: string) => ResolvedTeam): ResolvedTeam | null {
+  if (!m.is_finished || m.home_score === null || m.away_score === null) return null;
+  const homeWon =
+    m.home_score > m.away_score ||
+    (m.home_score === m.away_score && m.penalty_winner === 'home');
+  const awayWon =
+    m.away_score > m.home_score ||
+    (m.home_score === m.away_score && m.penalty_winner === 'away');
+  if (homeWon) return resolveFn(m.away_team);
+  if (awayWon) return resolveFn(m.home_team);
+  return null;
 }
 
 // Manual overrides: keyed by group letter, value is [1st, 2nd, 3rd, 4th] team names.
@@ -354,7 +363,7 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
     if (m) {
       const match = jMap.get(parseInt(m[1]));
       if (!match) return { name: placeholder, flag: null };
-      const w = getWinner(match);
+      const w = getWinner(match, resolve);
       return w ?? { name: placeholder, flag: null };
     }
 
@@ -362,7 +371,7 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
     if (m) {
       const match = r16map.get(88 + parseInt(m[1]));
       if (!match) return { name: placeholder, flag: null };
-      const w = getWinner(match);
+      const w = getWinner(match, resolve);
       return w ?? { name: placeholder, flag: null };
     }
 
@@ -370,7 +379,7 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
     if (m) {
       const match = qfmap.get(96 + parseInt(m[1]));
       if (!match) return { name: placeholder, flag: null };
-      const w = getWinner(match);
+      const w = getWinner(match, resolve);
       return w ?? { name: placeholder, flag: null };
     }
 
@@ -378,8 +387,7 @@ export function buildResolver(allMatches: Match[], overrides: GroupOverrides = {
     if (m) {
       const match = sfmap.get(100 + parseInt(m[2]));
       if (!match) return { name: placeholder, flag: null };
-      const fn = m[1] === "Vencedor" ? getWinner : getLoser;
-      const r = fn(match);
+      const r = m[1] === "Vencedor" ? getWinner(match, resolve) : getLoser(match, resolve);
       return r ?? { name: placeholder, flag: null };
     }
 
