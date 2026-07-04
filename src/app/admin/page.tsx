@@ -88,6 +88,8 @@ export default async function AdminPage() {
 
   const roundResultsRows = (finishedMatchesRaw ?? []).map((m) => ({
     ...m,
+    home_team: resolve(m.home_team).name,
+    away_team: resolve(m.away_team).name,
     home_score: m.home_score ?? 0,
     away_score: m.away_score ?? 0,
     predictions: predByMatch[m.id] ?? [],

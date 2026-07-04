@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { RankingDashboard } from "@/components/RankingDashboard";
+import { buildResolver } from "@/lib/bracket";
 
 export const revalidate = 60;
 
@@ -17,13 +18,24 @@ export default async function PlacarPage() {
     .order("name", { ascending: true });
 
   // Round ranking: last 3 finished matches
+  const { data: allMatchesForResolver } = await supabase
+    .from("matches")
+    .select("id, home_team, away_team, home_flag, away_flag, home_score, away_score, is_finished, stage, group_name, match_date");
+  const resolve = buildResolver(allMatchesForResolver ?? []);
+
   const { data: recentMatchesRaw } = await supabase
     .from("matches")
     .select("id, home_team, away_team, home_flag, away_flag, match_date, home_score, away_score, penalty_winner")
     .eq("is_finished", true)
     .order("match_date", { ascending: false })
     .limit(3);
-  const recentMatches = (recentMatchesRaw ?? []).reverse(); // oldest first = left to right
+  const recentMatches = (recentMatchesRaw ?? []).reverse().map((m) => ({ // oldest first = left to right
+    ...m,
+    home_team: resolve(m.home_team).name,
+    away_team: resolve(m.away_team).name,
+    home_flag: m.home_flag ?? resolve(m.home_team).flag,
+    away_flag: m.away_flag ?? resolve(m.away_team).flag,
+  }));
 
   let roundLeaders: { id: string; name: string | null; avatar_url: string | null; points: number }[] = [];
   let roundMatchBreakdown: {
