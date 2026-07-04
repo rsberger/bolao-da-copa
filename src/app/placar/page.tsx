@@ -20,7 +20,7 @@ export default async function PlacarPage() {
   // Round ranking: last 3 finished matches
   const { data: allMatchesForResolver } = await supabase
     .from("matches")
-    .select("id, home_team, away_team, home_flag, away_flag, home_score, away_score, is_finished, stage, group_name, match_date");
+    .select("id, home_team, away_team, home_flag, away_flag, home_score, away_score, is_finished, stage, group_name, match_date, penalty_winner");
   const resolve = buildResolver(allMatchesForResolver ?? []);
 
   const { data: recentMatchesRaw } = await supabase
