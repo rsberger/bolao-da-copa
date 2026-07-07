@@ -60,6 +60,7 @@ export async function syncResults(): Promise<SyncResult> {
     home_score: m.home_score,
     away_score: m.away_score,
     penalty_winner: m.penalty_winner,
+    stage: m.stage,
   }));
 
   let updated = 0;
@@ -115,6 +116,13 @@ export async function syncResults(): Promise<SyncResult> {
     // If API has no penalty data but DB already has it, preserve the DB penalty data
     const keepExistingPenalty = penaltyWinner === null && dbMatch.penalty_winner != null;
     const effectivePenaltyWinner = keepExistingPenalty ? dbMatch.penalty_winner : penaltyWinner;
+
+    // Knockout matches that end level after regular/extra time must go to
+    // penalties. If the API hasn't resolved a shootout winner yet (and we
+    // don't already have one saved), don't mark the match as finished —
+    // wait for the next sync once the shootout result is available.
+    const isKnockoutDraw = dbMatch.stage !== "Grupos" && dbHomeScore === dbAwayScore;
+    if (isKnockoutDraw && effectivePenaltyWinner == null) continue;
 
     if (dbMatch.is_finished && dbMatch.home_score === dbHomeScore && dbMatch.away_score === dbAwayScore && dbMatch.penalty_winner === effectivePenaltyWinner) continue;
 
