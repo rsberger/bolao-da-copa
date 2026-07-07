@@ -409,20 +409,13 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
                 return (
                   <div key={team} className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${isOut ? "bg-slate-700/30" : "bg-slate-700/60"}`}>
                     {flagUrl(flag) && (
-                      <div className="relative shrink-0">
-                        <img src={flagUrl(flag)!} alt={team} className={`w-6 h-4 object-cover rounded-sm ${isOut ? "grayscale opacity-50" : ""}`} />
-                        {isOut && (
-                          <span className="absolute inset-0 flex items-center">
-                            <span className="w-full h-[1.5px] bg-red-500 rotate-[-20deg]" />
-                          </span>
-                        )}
-                      </div>
+                      <img src={flagUrl(flag)!} alt={team} className={`w-6 h-4 object-cover rounded-sm shrink-0 ${isOut ? "grayscale opacity-50" : ""}`} />
                     )}
-                    <span className={`text-sm font-medium ${isOut ? "text-slate-500 line-through" : "text-white"}`}>
+                    <span className={`text-sm font-medium ${isOut ? "text-slate-500" : "text-white"}`}>
                       {countryName(flag, locale) ?? team}
                     </span>
                     <span className={`text-xs font-semibold ${isOut ? "text-slate-600" : "text-slate-400"}`}>{count}×</span>
-                    {isOut && <span className="text-xs" title={t.eliminatedLabel}>❌</span>}
+                    {isOut && <span className="text-xs text-slate-500" title={t.eliminatedLabel}>({t.eliminatedLabel})</span>}
                   </div>
                 );
               })}
