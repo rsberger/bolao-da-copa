@@ -415,7 +415,7 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
                       {countryName(flag, locale) ?? team}
                     </span>
                     <span className={`text-xs font-semibold ${isOut ? "text-slate-600" : "text-slate-400"}`}>{count}×</span>
-                    {isOut && <span className="text-xs text-slate-500" title={t.eliminatedLabel}>({t.eliminatedLabel})</span>}
+                    {isOut && <span className="text-xs" title={t.eliminatedLabel}>❌</span>}
                   </div>
                 );
               })}
