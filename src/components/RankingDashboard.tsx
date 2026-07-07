@@ -751,12 +751,19 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
           ))}
         </div>
 
-        {/* Penalty winner note */}
+        {/* Penalty winner notes */}
         <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 flex items-center gap-3">
           <span className="text-yellow-400 font-bold text-lg shrink-0">2</span>
           <div>
             <div className="text-yellow-300 text-xs font-semibold">{t.scoringPenWinner}</div>
             <div className="text-slate-500 text-xs">{t.scoringPenWinnerPts}</div>
+          </div>
+        </div>
+        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-3 flex items-center gap-3">
+          <span className="text-yellow-400 font-bold text-lg shrink-0">+2</span>
+          <div>
+            <div className="text-yellow-300 text-xs font-semibold">{t.scoringPenDrawBonus}</div>
+            <div className="text-slate-500 text-xs">{t.scoringPenDrawBonusPts}</div>
           </div>
         </div>
 
