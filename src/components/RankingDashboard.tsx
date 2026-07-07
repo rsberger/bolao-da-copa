@@ -40,6 +40,7 @@ type Props = {
   finishedPredsById: Record<string, number>;
   geloUserIds: string[];
   zebraCountById: Record<string, number>;
+  eliminatedTeams?: string[];
 };
 
 function Avatar({ player, size = 40 }: { player: Leader; size?: number }) {
@@ -277,7 +278,8 @@ function StatCard({ label, value, sub, color }: { label: string; value: string |
   );
 }
 
-export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, roundMatchBreakdown, championPicks, myChampionPick, missingMatchCount, missingChampion, finishedPredsById, geloUserIds, zebraCountById }: Props) {
+export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMatchCount, roundMatchBreakdown, championPicks, myChampionPick, missingMatchCount, missingChampion, finishedPredsById, geloUserIds, zebraCountById, eliminatedTeams }: Props) {
+  const eliminatedSet = new Set(eliminatedTeams ?? []);
   const t = useT();
   const locale = useLocale();
   const getBadges = useBadges(leaders, roundLeaders, finishedPredsById, geloUserIds, zebraCountById);
@@ -402,15 +404,28 @@ export function RankingDashboard({ leaders, currentUserId, roundLeaders, roundMa
           <div className="bg-slate-800 border border-yellow-500/20 rounded-xl px-5 py-4">
             <p className="text-slate-400 text-xs uppercase tracking-wide font-medium mb-3">🏆 {t.championPicksTitle}</p>
             <div className="flex flex-wrap gap-2">
-              {sorted.map(([team, { flag, count }]) => (
-                <div key={team} className="flex items-center gap-2 bg-slate-700/60 rounded-lg px-3 py-1.5">
-                  {flagUrl(flag) && (
-                    <img src={flagUrl(flag)!} alt={team} className="w-6 h-4 object-cover rounded-sm shrink-0" />
-                  )}
-                  <span className="text-white text-sm font-medium">{countryName(flag, locale) ?? team}</span>
-                  <span className="text-slate-400 text-xs font-semibold">{count}×</span>
-                </div>
-              ))}
+              {sorted.map(([team, { flag, count }]) => {
+                const isOut = eliminatedSet.has(team);
+                return (
+                  <div key={team} className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${isOut ? "bg-slate-700/30" : "bg-slate-700/60"}`}>
+                    {flagUrl(flag) && (
+                      <div className="relative shrink-0">
+                        <img src={flagUrl(flag)!} alt={team} className={`w-6 h-4 object-cover rounded-sm ${isOut ? "grayscale opacity-50" : ""}`} />
+                        {isOut && (
+                          <span className="absolute inset-0 flex items-center">
+                            <span className="w-full h-[1.5px] bg-red-500 rotate-[-20deg]" />
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <span className={`text-sm font-medium ${isOut ? "text-slate-500 line-through" : "text-white"}`}>
+                      {countryName(flag, locale) ?? team}
+                    </span>
+                    <span className={`text-xs font-semibold ${isOut ? "text-slate-600" : "text-slate-400"}`}>{count}×</span>
+                    {isOut && <span className="text-xs" title={t.eliminatedLabel}>❌</span>}
+                  </div>
+                );
+              })}
             </div>
           </div>
         );

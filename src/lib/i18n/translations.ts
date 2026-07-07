@@ -175,6 +175,7 @@ export const translations = {
     championLocked: "Palpites encerrados",
     championYourPick: "Seu palpite",
     championPicksTitle: "Palpites dos jogadores",
+    eliminatedLabel: "Eliminado",
     championNoPicks: "Nenhum palpite ainda.",
     championSelect: "Selecione um país...",
 
@@ -527,6 +528,7 @@ export const translations = {
     championLocked: "Predictions closed",
     championYourPick: "Your pick",
     championPicksTitle: "Player picks",
+    eliminatedLabel: "Eliminated",
     championNoPicks: "No picks yet.",
     championSelect: "Select a country...",
 
@@ -795,6 +797,7 @@ export const translations = {
     championLocked: "Voorspellingen gesloten",
     championYourPick: "Jouw keuze",
     championPicksTitle: "Keuzes van spelers",
+    eliminatedLabel: "Uitgeschakeld",
     championNoPicks: "Nog geen keuzes.",
     championSelect: "Selecteer een land...",
 

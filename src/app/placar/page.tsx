@@ -23,6 +23,18 @@ export default async function PlacarPage() {
     .select("id, home_team, away_team, home_flag, away_flag, home_score, away_score, is_finished, stage, group_name, match_date, penalty_winner");
   const resolve = buildResolver(allMatchesForResolver ?? []);
 
+  // Teams eliminated from champion contention: lost a knockout-stage match
+  const eliminatedTeams = new Set<string>();
+  for (const m of allMatchesForResolver ?? []) {
+    if (m.stage === "Grupos" || !m.is_finished || m.home_score == null || m.away_score == null) continue;
+    let loserRaw: string | null = null;
+    if (m.home_score > m.away_score) loserRaw = m.away_team;
+    else if (m.away_score > m.home_score) loserRaw = m.home_team;
+    else if (m.penalty_winner === "home") loserRaw = m.away_team;
+    else if (m.penalty_winner === "away") loserRaw = m.home_team;
+    if (loserRaw) eliminatedTeams.add(resolve(loserRaw).name);
+  }
+
   const { data: recentMatchesRaw } = await supabase
     .from("matches")
     .select("id, home_team, away_team, home_flag, away_flag, match_date, home_score, away_score, penalty_winner")
@@ -189,6 +201,7 @@ export default async function PlacarPage() {
       roundMatchBreakdown={roundMatchBreakdown}
       championPicks={championPicks}
       myChampionPick={myChampionPick}
+      eliminatedTeams={[...eliminatedTeams]}
       missingMatchCount={missingMatchCount}
       missingChampion={missingChampion}
       finishedPredsById={finishedPredsById}
